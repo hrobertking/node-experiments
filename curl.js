@@ -75,13 +75,13 @@ function request(options, callback) {
 		output.httpVersion = null;
 		output.method = (options.method || 'GET').toUpperCase();
 		output.on = function(evt, callback) {
-			if ((/^close$/i).test(evt)) {
-				emitter.on('output_close', callback);
-			}
-		});
+				if ((/^close$/i).test(evt)) {
+					emitter.on('output_close', callback);
+				}
+			};
 		output.setTimeout = function(ms, callback) {
-			setSocketTimeout(ms, callback);
-		});
+				setSocketTimeout(ms, callback);
+			};
 		output.socket = null;
 		output.statusCode = null;
 		output.trailers = {};
@@ -257,11 +257,12 @@ function request(options, callback) {
 	 * @param	{string} encoding
 	 */
 	this.write = function(data, encoding) {
+		var qw = (/\"/).test(data) ? "'" : '"';
 		if (data) {
 			if (encoding === 'binary') {
 				args.push('--data-binary ' + data);
 			} else {
-				args.push('-d ' + data);
+				args.push('-d ' + qw + data + qw);
 			}
 			sendCommand();
 		}
