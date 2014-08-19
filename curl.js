@@ -65,6 +65,11 @@ function request(options, callback) {
 		  , header_req
 		;
 
+		// The 'output' stream is just a pass through that enables us to simulate an http.IncomingMessage object
+		// so it doesn't really need a 'read' function - I'm just setting this because it complains about it
+		// not being implemented if I don't.
+		output._read = function () {};
+
 		// Add the other properties to 'output' to make it an http.IncomingMessage:
 		// close event; headers: e.g., { 'user-agent': 'curl/7.22.0', 'host': '127.0.0.1:8000', 'accept': '*/*' };
 		// httpVersion: e.g., '1.1'; method: http verb; setTimeout(ms, callback): calls connection setTimeout;
@@ -89,7 +94,7 @@ function request(options, callback) {
 
 		output.url += (options.protocol || 'http').replace(/\:$/, '') + '://';
 		output.url += (options.port ? options.host + ':' + options.port : (options.hostname || options.host)) + '/';
-		output.url += options.path;
+		output.url += (options.path.replace(/^\//, ''));
 
 		// Get all the headers to fill in the basic data
 		header_req = proc.spawn('curl', ['-I', output.url]);
@@ -204,6 +209,19 @@ function request(options, callback) {
 	};
 
 	/**
+	 * Subscribes to an event 'once'
+	 * @return	{void}
+	 * @param	{string} eventname
+	 * @param	{function} handler
+	 */
+	this.once = function(eventname, handler) {
+		var valid = (/^(error|response|timeout)$/i).test(eventname);
+		if (valid) {
+			emitter.once(eventname.toLowerCase(), handler);
+		}
+	};
+
+	/**
 	 * Disables the Nagle algorithm.
 	 * @return	{void}
 	 * @param	{boolean} value
@@ -257,12 +275,20 @@ function request(options, callback) {
 	 * @param	{string} encoding
 	 */
 	this.write = function(data, encoding) {
-		var qw = (/\"/).test(data) ? "'" : '"';
+		var qw
+		  , x
+		;
 		if (data) {
+			data = data.split('&');
 			if (encoding === 'binary') {
-				args.push('--data-binary ' + data);
+				for (x = 0; x < data.length; x += 1) {
+					args.push('--data-binary ' + data[x]);
+				}
 			} else {
-				args.push('-d ' + qw + data + qw);
+				for (x = 0; x < data.length; x += 1) {
+					qw = (/\"/).test(data[x]) ? "'" : '"';
+					args.push('-d ' + qw + data[x] + qw);
+				}
 			}
 			sendCommand();
 		}
