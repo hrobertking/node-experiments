@@ -90,10 +90,18 @@ function sleep(ms) {
 /**
  * Starts the server
  * @return   {void}
+ * @param    {integer} listento
  * @emits    request-received
  * @emits    response-sent
  */
-function start() {
+function start(listento) {
+	// set the port if it's passed in
+	if (listento) {
+		if (!isNaN(listento)) {
+			port = Math.floor(listento);
+		}
+	}
+
 	function onRequest(request, response) {
 		var qs = require('querystring') // nodejs core
 		  , url = require('url')        // nodejs core

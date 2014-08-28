@@ -34,6 +34,7 @@ function ignored(message) {
  * @return   {message}
  * @param    {server.Message} message
  * @emits    response-sent
+ * @emits    error
  */
 function unhandled(message) {
 	var fs = require('fs')
@@ -78,6 +79,7 @@ Object.defineProperty(exports, 'routes', {
  * Routes a request to a response
  * @return   {void}
  * @param    {server.Message} message
+ * @emits    error
  */
 function route(message) {
 	var url = require('url')

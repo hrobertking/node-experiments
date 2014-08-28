@@ -108,7 +108,7 @@ exports.writeAsCSV = writeDataCsv;
 
 /**
  * Writes the data set out as HTML and returns the number of bytes written
- * @return   {integer}
+ * @return   {server.Message}
  * @param    {server.Message} message
  * @param    {object[]) data
  */

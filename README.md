@@ -54,18 +54,38 @@ var router = require('./router');
 router.route(request, response);
 
 *Methods*
-- *void* route(*stream* request, *stream* response)
+- *void* on(*string* eventname, *function* handler): Subscribes to the 'error' or 'response-sent' event
+- *void* route(*server.Message* message): Routes a request
+
+*Properties*
+- *hash* routes: A hash of routes and their defined handlers
+
+Example:  
+var router = require('./route'),  
+server = require('./server'),  
+message = new Message(request, response);  
+router.route(message);
+
+### scale
+A module to calculate a scale for a value given a domain (minimum and maximum possible data values) and a range (minimum and maximum mapped values).
+
+Example:  
+var scale = require('./scale');  
+scale.domain = [1, 10];  
+scale.range = [1, 100];  
+var mapped = scale.scale(5);  // returns 50
 
 ### server
 The primary module that generates a web server. It requires the *router* module and the *writer* module in this repo.
 
 Example:  
-var server = require('./server');
-server.port = 8080;
+var server = require('./server');  
+server.port = 8080;  
 server.start();
 
 *Methods*
-- *void* start: Starts the web server
+- *void* on(*string* eventname, *function* handler): Subscribes to the 'request-received' or 'response-sent' event
+- *void* start(*integer* listento): Starts the web server on the port specified
 
 *Properties*
 - *integer* port: The port to listen on.
@@ -74,22 +94,24 @@ server.start();
 A collection of methods used to write to the response stream on the web server.
 
 Example:  
-var writer = require('./writer');
+var writer = require('./writer');  
 writer.writeAsJSON(res, [ {'name':'foo', 'value':'1'}, {'name':'bar', 'value':'2'} ]);
 
 *Methods*
-- *void* writeAsCSV(*stream* response, *object[]* data): Writes the data collection out as comma-separated values with a data element name header row.
-- *void* writeAsFile(*stream* response, *stream* file): Writes the file to the response.
-- *void* writeAsHTML(*stream* response, *object[]* data): Writes the data collection out as an HTML response using an unordered list
-- *void* writeAsJSON(*stream* response, *object[]* data): Writes the data collection out in JSON format.
-- *void* writeAsXML(*stream* response, *object[]* data): Writes the data collection out as XML, using 'data' as the root element and items in 'item' elements.
-- *void* writeClose(*stream* response): Closes the stream.
-- *void* writeContentType(*stream* response, *string* type, *integer* length): Writes the content-type and content-length headers. The default type is text/html; other recognized types and their corresponding content-type are:
+- *server.Message* writeAsCSV(*server.Message* message, *object[]* data): Writes the data collection out as comma-separated values with a data element name header row.
+- *server.Message* writeAsFile(*server.Message* message, *stream* file): Writes the file to the message.
+- *server.Message* writeAsHTML(*server.Message* message, *object[]* data): Writes the data collection out as an HTML response using an unordered list
+- *server.Message* writeAsJSON(*server.Message* message, *object[]* data): Writes the data collection out in JSON format.
+- *server.Message* writeAsXML(*server.Message* message, *object[]* data[, *string* tagNameRoot[, *string* tagNameChild]]): Writes the data collection out as XML, using 'data' as the root element and items in 'item' elements.
+- *server.Message* writeContents(*server.Message* message, *string* data): Writes the data to the response stream
+- *void* writeContentType(*stream* message, *string* type, *integer* length): Writes the content-type and content-length headers. The default type is text/html; other recognized types and their corresponding content-type are:
 * csv - text/plain;
 * json - application/json
 * xml - application/xml
-- *void* writeNotFound(*stream* response): Writes a generic 404 page.
-- *void* writeServerError(*stream* response, *string* err): Writes the specified error to an text/html response using 500 as the status code.
+- *server.Message* writeEmptyDocument(*server.Message* message): Writes an empty document to the response stream
+- *server.Message* writeNotFound(*server.Message* message): Writes a generic 404 page.
+- *server.Message* writeServerError(*server.Message* message, *string* err): Writes the specified error to an text/html response using 500 as the status code.
+- *void* writeToFileSystem(*string* contents, *string* filename): Writes the contents to the specified filename
 
 ## Licensing
 
