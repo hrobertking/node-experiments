@@ -1,55 +1,63 @@
 /**
  * @author: hrobertking@cathmhoal.com
  *
- * exports.writeAsCSV = writeResponseCSV;
+ * exports.filename = filename
+ * exports.writeAsCSV = writeDataCsv;
  * exports.writeAsFile = writeResponseFile;
- * exports.writeAsHTML = writeResponseHTML;
- * exports.writeAsJSON = writeResponseJSON;
- * exports.writeAsXML = writeResponseXML;
- * exports.writeClose = writeResponseClose;
+ * exports.writeAsHTML = writeDataHtml;
+ * exports.writeAsJSON = writeDataJson;
+ * exports.writeAsXML = writeDataXml;
+ * exports.writeContents = writeResponseContents;
  * exports.writeContentType = writeResponseHead;
+ * exports.writeEmptyDocument = writeResponseEmpty;
  * exports.writeNotFound = writeResponse404;
  * exports.writeServerError = writeResponseError;
+ * exports.writeToFileSystem = writeToFileSystem;
  *
  */
 
+var fs = require('fs')
+  , path = require('path')
+  , filename = ''
+  , serverMessage
+;
+
 /**
- * Writes a 404 response error
- * @return      {void}
- * @param       {HTTPResponse} response
+ * The default filename to write data to relative to the working directory of the process, e.g., 'sample-splunk-data.json'
+ * @type     {string}
  */
-function writeResponse404(response) {
-	if (response) {
-		var msg = '<!DOCTYPE html>';
-		msg += '\t<head><title>404 - Not Found</title></head>\n';
-		msg += '\t<body><h1>404 - Not Found</h1><p>I am sorry, but the resource you requested does not exist in this dimension.</p></body>\n';
-		msg += '</html>\n';
-
-		response.writeHead(404, {'Content-Type': 'text/html', 'Content-length': msg.length});
-		response.write(msg);
-
-		response.end();
+Object.defineProperty(exports, 'filename', {
+	get: function() {
+		return filename;
+	},
+	set: function(value) {
+		if (typeof value === 'string') {
+			filename = value;
+		}
 	}
-}
-exports.writeNotFound = writeResponse404;
+});
 
 /**
- * Writes the data set out as a CSV
- * @return	{void}
- * @param	{HTTPResponse} response
- * @param	{object[]) data
+ * Writes the data set out as a CSV and returns the number of bytes written
+ * @return   {server.Message}
+ * @param    {server.Message} message
+ * @param    {object[]) data
  */
-function writeResponseCSV(response, data) {
-	if (response) {
-		var i           // array loop index
-		  , key         // hash index
-		  , keys = []   // a hash of all the keys
-		  , head = []   // output array
-		  , lines = []  // output array
-		  , datum       // an individual data element
-		  , str = ''    // the content to write out
-		;
+function writeDataCsv(message, data) {
+	var fname = filename.replace(/\.[\w]+$/, '.csv')
+	  , i           // array loop index
+	  , key         // hash index
+	  , keys = []   // a hash of all the keys
+	  , head = []   // output array
+	  , lines = []  // output array
+	  , datum       // an individual data element
+	  , str = ''    // the content to write out
+	;
 
+	// set a global to make passing data back and forth easier
+	serverMessage = message;
+
+	if (message.response) {
 		if (data) {
 			// Generate a keys object
 			for (i in data) {
@@ -85,133 +93,330 @@ function writeResponseCSV(response, data) {
 				str += lines[i].join(',')+'\n';
 			}
 
-			writeResponseHead(response, 'csv', Buffer.byteLength(str))
-			response.write(str);
-			writeResponseClose(response);
+			writeResponseHead(message.response, 'csv', str.length)
+			message.response.write(str);
+
+			writeToFileSystem(str, fname);
 		}
 	}
+
+	serverMessage.response.bytes = Buffer.byteLength(str.toString());
+	serverMessage.response.date = new Date();
+	return serverMessage;
 }
-exports.writeAsCSV = writeResponseCSV;
+exports.writeAsCSV = writeDataCsv;
 
 /**
- * Writes the data set out as HTML
- * @return	{void}
- * @param	{HTTPResponse} response
- * @param	{object[]) data
+ * Writes the data set out as HTML and returns the number of bytes written
+ * @return   {integer}
+ * @param    {server.Message} message
+ * @param    {object[]) data
  */
-function writeResponseHTML(response, data) {
-	if (response) {
-		var i     // array loop index
-		  , line  // line out
-		  , item  // data item
-		  , key   // item key index
-		  , str = ''    // the content to write out
-		;
+function writeDataHtml(message, data) {
+	var fname = filename.replace(/\.[\w]+$/, '.html')
+	  , i           // array loop index
+	  , line        // line out
+	  , item        // data item
+	  , key         // item key index
+	  , str = ''    // the content to write out
+	;
 
-		str += '<!DOCTYPE html>\n';
-		str += '<body>\n';
-		str += '<ul>\n';
-		for (i in data) {
-			item = data[i];
-			line = [];
-			for (key in item) {
-				line.push('data-' + key + '="' + item[key] + '"');
+	// set a global to make passing data back and forth easier
+	serverMessage = message;
+
+	if (message.response) {
+		if (data) {
+			str += '<!DOCTYPE html>\n';
+			str += '<body>\n';
+			str += '<ul>\n';
+			for (i in data) {
+				item = data[i];
+				line = [];
+				for (key in item) {
+					line.push('data-' + key + '="' + item[key] + '"');
+				}
+				str += '\t<li ' + line.join(' ') + '>' + i + '</li>\n';
 			}
-			str += '\t<li ' + line.join(' ') + '>' + i + '</li>\n';
+			str += '</ul>\n';
+			str += '</body>\n';
+			str += '</html>\n';
+
+			writeResponseHead(message.response, 'html', str.length)
+			message.response.write(str);
+
+			writeToFileSystem(str, fname);
 		}
-		str += '</ul>\n';
-		str += '</body>\n';
+	}
+
+	serverMessage.response.bytes = Buffer.byteLength(str.toString());
+	serverMessage.response.date = new Date();
+	return serverMessage;
+}
+exports.writeAsHTML = writeDataHtml;
+
+/**
+ * Writes the data set out as JSON encoded and returns the number of bytes written
+ * @return   {server.Message}
+ * @param    {server.Message} message
+ * @param    {object[]) data
+ */
+function writeDataJson(message, data) {
+	var fname = filename.replace(/\.[\w]+$/, '.json')
+	  , i          // array loop index
+	  , str = [ ]  // the content to write out
+	;
+
+	// set a global to make passing data back and forth easier
+	serverMessage = message;
+
+	if (message.response) {
+		if (data) {
+			for (i in data) {
+				str.push(JSON.stringify(data[i], null, '\t'));
+			}
+
+			str = '[\n' + str.join(',\n') + ']\n';
+
+			writeResponseHead(message.response, 'json', str.length)
+			message.response.write(str);
+
+			writeToFileSystem(str, fname);
+		}
+	}
+
+	serverMessage.response.bytes = Buffer.byteLength(str.toString());
+	serverMessage.response.date = new Date();
+	return serverMessage;
+}
+exports.writeAsJSON = writeDataJson;
+
+/**
+ * Writes the data set out as an XML document and returns the number of bytes written
+ * @return   {server.Message}
+ * @param    {server.Message} message
+ * @param    {object[]) data
+ * @param    {string} tagNameRoot
+ * @param    {string} tagNameChild
+ */
+function writeDataXml(message, data, tagNameRoot, tagNameChild) {
+	var fname = filename.replace(/\.[\w]+$/, '.xml')
+	  , attr = [ ]  // attributes
+	  , i           // array loop index
+	  , item        // data item
+	  , key         // item key index
+	  , line        // line out
+	  , schema = '' // xml-schema
+	  , str = ''    // the content to write out
+	;
+
+	// set a global to make passing data back and forth easier
+	serverMessage = message;
+
+	tagNameRoot = tagNameRoot || 'root';
+	tagNameChild = tagNameChild || 'child';
+
+	if (message.response) {
+		if (data) {
+			str += '<?xml version="1.0" encoding="UTF-8"?>\n';
+			str += '<' + tagNameRoot + '>\n';
+			for (i in data) {
+				item = data[i];
+				line = [];
+				for (key in item) {
+					line.push(key + '="' + item[key] + '"');
+					switch (typeof item[key]) {
+						case 'boolean':
+							attr[key] = 'xs:boolean';
+							break;
+						case 'number':
+							attr[key] = Math.floor(item[key]) == item[key] ? 'xs:integer' : 'xs:decimal'; // use == because we must only check the value
+							break;
+						case 'string':
+							attr[key] = 'xs:string';
+							break;
+						default:
+							attr[key] = item[key] instanceof Date ? 'xs:dateTime' : 'xs:string';
+							break;
+					}
+				}
+				str += '\t<' + tagNameChild + line.join(' ') + '/>\n';
+			}
+			str += '</' + tagNameRoot + '>\n';
+
+			// create the schema
+			schema += '<?xml version="1.0"?>\n';
+			schema += '<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">\n';
+			schema += '<xs:element name="' + tagNameRoot +'">\n';
+			schema += '\t<xs:complexType>\n';
+			schema += '\t\t<xs:sequence>\n';
+			schema += '\t\t\t<xs:element name="' + tagRootChild + '">\n';
+			schema += '\t\t\t\t<xs:complexType>\n';
+			for (key in attr) {
+				schema += '\t\t\t\t\t<xs:attribute name="' + key +'" type="' + attr[key] + '"/>\n';
+			}
+			schema += '\t\t\t\t</xs:complexType>\n';
+			schema += '\t\t\t</xs:element>\n';
+			schema += '\t\t</xs:sequence>\n';
+			schema += '\t</xs:complexType>\n';
+			schema += '</xs:element>\n';
+			schema += '</xs:schema>\n';
+
+			writeResponseHead(message.response, 'xml', str.length)
+			message.response.write(str);
+
+			writeToFileSystem(str, fname);
+		}
+	}
+
+	serverMessage.response.bytes = Buffer.byteLength(str.toString());
+	serverMessage.response.date = new Date();
+	return serverMessage;
+}
+exports.writeAsXML = writeDataXml;
+
+/**
+ * Writes the contents directly to the stream and returns the number of bytes written
+ * @return   {server.Message}
+ * @param    {server.Message} message
+ * @param    {string} data
+ */
+function writeResponseContents(message, data) {
+	var str = '';
+
+	// set a global to make passing data back and forth easier
+	serverMessage = message;
+
+	if (message.response) {
+		if (data) {
+			str += contents.toString('utf8');
+		}
+		message.response.write(str);
+	}
+	serverMessage.response.bytes = Buffer.byteLength(str);
+	serverMessage.response.date = new Date();
+	return serverMessage;
+}
+exports.writeContents = writeResponseContents;
+
+/**
+ * Writes a 404 response error and returns the number of bytes written
+ * @return   {server.Message}
+ * @param    {server.Message} message
+ */
+function writeResponse404(message) {
+	var str = '';
+
+	// set a global to make passing data back and forth easier
+	serverMessage = message;
+
+	if (message.response) {
+		str += '<!DOCTYPE html>';
+		str += '\t<head><title>404 - Not Found</title></head>\n';
+		str += '\t<body><h1>404 - Not Found</h1><p>I am sorry, but the resource you requested does not exist in this dimension.</p></body>\n';
 		str += '</html>\n';
 
-		writeResponseHead(response, 'html', Buffer.byteLength(str))
-		response.write(str);
-		writeResponseClose(response);
+		message.response.writeHead(404, {'Content-Type': 'text/html', 'Content-length': str.length});
+		message.response.write(str);
 	}
+
+	serverMessage.response.bytes = Buffer.byteLength(str.toString());
+	serverMessage.response.date = new Date();
+	return serverMessage;
 }
-exports.writeAsHTML = writeResponseHTML;
+exports.writeNotFound = writeResponse404;
 
 /**
- * Writes the data set out as JSON encoded
- * @return	{void}
- * @param	{HTTPResponse} response
- * @param	{object[]) data
+ * Writes an empty document
+ * @return   {server.Message}
+ * @param    {server.Message} message
  */
-function writeResponseJSON(response, data) {
-	if (response) {
-		var i         // array loop index
-		  , str = ''  // the content to write out
-		;
+function writeResponseEmpty(message) {
+	// set a global to make passing data back and forth easier
+	serverMessage = message;
 
+	if (message.response) {
+		writeResponseHead(message.response, 'html', 0);
+	}
+
+	serverMessage.response.bytes = 0;
+	serverMessage.response.date = new Date();
+	return serverMessage;
+}
+exports.writeEmptyDocument = writeResponseEmpty;
+
+/**
+ * Writes an error to the response and returns the number of bytes written
+ * @return   {server.Message}
+ * @param    {server.Message} message
+ * @param    {string} err
+ */
+function writeResponseError(message, err) {
+	var str = '';
+
+	// set a global to make passing data back and forth easier
+	serverMessage = message;
+
+	if (message.response) {
+		str = (err || 'Ouch. A server error has occurred') + '\n';
+
+		message.response.writeHead(500, {'Content-Type': 'text/plain', 'Content-length': str.length});
+		message.response.write(str);
+	}
+
+	serverMessage.response.bytes = Buffer.byteLength(contents.toString());
+	serverMessage.response.date = new Date();
+	return serverMessage;
+}
+exports.writeServerError = writeResponseError;
+
+/**
+ * Writes a file to the response and returns the number of bytes written
+ * @return   {server.Message}
+ * @param    {server.Message} message
+ * @param    {string} data
+ */
+function writeResponseFile(message, data) {
+	var str = '';
+
+	// set a global to make passing data back and forth easier
+	serverMessage = message;
+
+	if (message.response) {
 		if (data) {
-			str += '[\n';
-			for (i in data) {
-				str += JSON.stringify(data[i], null, '\t') + '\n';
-			}
-			str += ']\n';
+			str += data.toString('binary');
+
+			message.response.writeHead(200);
+			message.response.write(str);
 		}
-
-		writeResponseHead(response, 'json', Buffer.byteLength(str))
-		response.write(str);
-		writeResponseClose(response);
 	}
+
+	serverMessage.response.bytes = Buffer.byteLength(str);
+	serverMessage.response.date = new Date();
+	return serverMessage;
 }
-exports.writeAsJSON = writeResponseJSON;
-
-/**
- * Writes the data set out as an XML document
- * @return	{void}
- * @param	{HTTPResponse} response
- * @param	{object[]) data
- */
-function writeResponseXML(response, data) {
-	if (response) {
-		var i         // array loop index
-		  , line      // line out
-		  , item      // data item
-		  , key       // item key index
-		  , str = ''  // the content to write out
-		;
-
-		str += '<?xml version="1.0" encoding="UTF-8"?>\n';
-		str += '<data>\n';
-		for (i in data) {
-			item = data[i];
-			line = [];
-			for (key in item) {
-				line.push(key + '="' + item[key] + '"');
-			}
-			str += '\t<item ' + line.join(' ') + '/>\n';
-		}
-		str += '</data>\n';
-
-		writeResponseHead(response, 'xml', Buffer.byteLength(str))
-		response.write(str);
-		writeResponseClose(response);
-	}
-}
-exports.writeAsXML = writeResponseXML;
+exports.writeAsFile = writeResponseFile;
 
 /**
  * Writes the response headers
- * @return	{void}
- * @param	{HTTPResponse} response
- * @param	{string} type
- * @param	{integer} length
+ * @return   {void}
+ * @param    {HTTPResponse} response
+ * @param    {string} type
+ * @param    {number} length
  */
 function writeResponseHead(response, type, length) {
 	if (response) {
 		switch (type.toLowerCase()) {
 			case 'csv':
-				response.writeHead(200, {'Content-Type': 'text/plain', 'Content-length': length});
+				response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'text/plain', 'Content-length': length});
 				break;
 			case 'json':
-				response.writeHead(200, {'Content-Type': 'application/json', 'Content-length': length});
+				response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'application/json', 'Content-length': length});
 				break;
 			case 'xml':
-				response.writeHead(200, {'Content-Type': 'application/xml', 'Content-length': length});
+				response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'application/xml', 'Content-length': length});
 				break;
 			default:
-				response.writeHead(200, {'Content-Type': 'text/html', 'Content-length': length});
+				response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'text/html', 'Content-length': length});
 				break;
 		}
 	}
@@ -219,45 +424,17 @@ function writeResponseHead(response, type, length) {
 exports.writeContentType = writeResponseHead;
 
 /**
- * Closes the response
- * @return	{void}
- * @param	{HTTPResponse} response
+ * Writes to the file system
+ * @return   {void}
+ * @param    {string} contents
+ * @param    {string} fname
  */
-function writeResponseClose(response) {
-	if (response) {
-		response.end();
-	}
+function writeToFileSystem(contents, fname) {
+	fname = path.join(process.cwd(), fname);
+	fs.writeFile(fname, contents, function (err) {
+		if (err) {
+			console.warn(err);
+		}
+	});
 }
-exports.writeClose = writeResponseClose;
-
-/**
- * Writes an error to the response
- * @return	{object}
- * @param	{HTTPResponse} response
- * @param	{string} err
- */
-function writeResponseError(response, err) {
-	if (response) {
-		var msg = err + '\n';
-
-		response.writeHead(500, {'Content-Type': 'text/plain', 'Content-length': msg.length});
-		response.write(msg);
-		response.end();
-	}
-}
-exports.writeServerError = writeResponseError;
-
-/**
- * Writes a file to the response
- * @return	{object}
- * @param	{HTTPResponse} response
- * @param	{string} file
- */
-function writeResponseFile(response, file) {
-	if (response) {
-		response.writeHead(200);
-		response.write(file, 'binary');
-		response.end();
-	}
-}
-exports.writeAsFile = writeResponseFile;
+exports.writeToFileSystem = writeToFileSystem;
