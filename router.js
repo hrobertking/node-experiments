@@ -1,10 +1,11 @@
 /**
  * @author: hrobertking@cathmhoal.com
  *
- * exports.on = subscribe;
- * exports.routes = routes;
- * exports.route = route;
+ * @exports subscribe as on
+ * @exports routes as routes
+ * @exports route as route
  *
+ * @see The <a href="https://github.com/hrobertking/node-experiments">node-experiments</a> repo for information about the writer module
  */
 
 var events = require('events')
@@ -17,22 +18,29 @@ var events = require('events')
 /* v -------------------------- ROUTING HANDLERS -------------------------------- v */
 routes['/favicon.ico'] = ignored;
 
+
+/* ^ -------------------------- ROUTING HANDLERS -------------------------------- ^ */
+
 /**
- * Ignores the request
+ * Ignores the request by sending back an empty document with a 200 status code
+ *
  * @return   {message}
+ *
  * @param    {server.Message} message
+ *
  * @emits    response-sent
  */
 function ignored(message) {
 	emitter.emit('response-sent', writer.writeEmptyDocument(message));
 }
 
-/* ^ -------------------------- ROUTING HANDLERS -------------------------------- ^ */
-
 /**
  * Handles requests not otherwise routed
+ *
  * @return   {message}
+ *
  * @param    {server.Message} message
+ *
  * @emits    response-sent
  * @emits    error
  */
@@ -67,6 +75,7 @@ function unhandled(message) {
 
 /**
  * The routing table
+ *
  * @type     {object}
  */
 Object.defineProperty(exports, 'routes', {
@@ -77,8 +86,11 @@ Object.defineProperty(exports, 'routes', {
 
 /**
  * Routes a request to a response
+ *
  * @return   {void}
+ *
  * @param    {server.Message} message
+ *
  * @emits    error
  */
 function route(message) {
@@ -103,7 +115,9 @@ exports.route = route;
 
 /**
  * Registers event handlers for request-received and response-sent events
+ *
  * @return   {void}
+ *
  * @param    {string} eventname
  * @param    {function} handler
  */

@@ -1,19 +1,20 @@
 /**
  * @author: hrobertking@cathmhoal.com
  *
- * exports.filename = filename
- * exports.writeAsCSV = writeDataCsv;
- * exports.writeAsFile = writeResponseFile;
- * exports.writeAsHTML = writeDataHtml;
- * exports.writeAsJSON = writeDataJson;
- * exports.writeAsXML = writeDataXml;
- * exports.writeContents = writeResponseContents;
- * exports.writeContentType = writeResponseHead;
- * exports.writeEmptyDocument = writeResponseEmpty;
- * exports.writeNotFound = writeResponse404;
- * exports.writeServerError = writeResponseError;
- * exports.writeToFileSystem = writeToFileSystem;
+ * @exports filename as filename
+ * @exports writeDataCsv as writeAsCSV
+ * @exports writeResponseFile as writeAsFile
+ * @exports writeDataHtml as writeAsHTML
+ * @exports writeDataJson as writeAsJSON
+ * @exports writeDataXml as writeAsXML
+ * @exports writeResponseContents as writeContents
+ * @exports writeResponseHead as writeContentType
+ * @exports writeResponseEmpty as writeEmptyDocument
+ * @exports writeResponse404 as writeNotFound
+ * @exports writeResponseError as writeServerError
+ * @exports writeToFileSystem as writeToFileSystem
  *
+ * @see The <a href="https://github.com/hrobertking/node-experiments">node-experiments</a> repo for information about the server module
  */
 
 var fs = require('fs')
@@ -24,6 +25,7 @@ var fs = require('fs')
 
 /**
  * The default filename to write data to relative to the working directory of the process, e.g., 'sample-splunk-data.json'
+ *
  * @type     {string}
  */
 Object.defineProperty(exports, 'filename', {
@@ -39,7 +41,9 @@ Object.defineProperty(exports, 'filename', {
 
 /**
  * Writes the data set out as a CSV and returns the number of bytes written
+ *
  * @return   {server.Message}
+ *
  * @param    {server.Message} message
  * @param    {object[]) data
  */
@@ -108,7 +112,9 @@ exports.writeAsCSV = writeDataCsv;
 
 /**
  * Writes the data set out as HTML and returns the number of bytes written
+ *
  * @return   {server.Message}
+ *
  * @param    {server.Message} message
  * @param    {object[]) data
  */
@@ -156,7 +162,9 @@ exports.writeAsHTML = writeDataHtml;
 
 /**
  * Writes the data set out as JSON encoded and returns the number of bytes written
+ *
  * @return   {server.Message}
+ *
  * @param    {server.Message} message
  * @param    {object[]) data
  */
@@ -192,7 +200,9 @@ exports.writeAsJSON = writeDataJson;
 
 /**
  * Writes the data set out as an XML document and returns the number of bytes written
+ *
  * @return   {server.Message}
+ *
  * @param    {server.Message} message
  * @param    {object[]) data
  * @param    {string} tagNameRoot
@@ -276,7 +286,9 @@ exports.writeAsXML = writeDataXml;
 
 /**
  * Writes the contents directly to the stream and returns the number of bytes written
+ *
  * @return   {server.Message}
+ *
  * @param    {server.Message} message
  * @param    {string} data
  */
@@ -300,7 +312,9 @@ exports.writeContents = writeResponseContents;
 
 /**
  * Writes a 404 response error and returns the number of bytes written
+ *
  * @return   {server.Message}
+ *
  * @param    {server.Message} message
  */
 function writeResponse404(message) {
@@ -327,7 +341,9 @@ exports.writeNotFound = writeResponse404;
 
 /**
  * Writes an empty document
+ *
  * @return   {server.Message}
+ *
  * @param    {server.Message} message
  */
 function writeResponseEmpty(message) {
@@ -346,7 +362,9 @@ exports.writeEmptyDocument = writeResponseEmpty;
 
 /**
  * Writes an error to the response and returns the number of bytes written
+ *
  * @return   {server.Message}
+ *
  * @param    {server.Message} message
  * @param    {string} err
  */
@@ -371,7 +389,9 @@ exports.writeServerError = writeResponseError;
 
 /**
  * Writes a file to the response and returns the number of bytes written
+ *
  * @return   {server.Message}
+ *
  * @param    {server.Message} message
  * @param    {string} data
  */
@@ -398,7 +418,9 @@ exports.writeAsFile = writeResponseFile;
 
 /**
  * Writes the response headers
+ *
  * @return   {void}
+ *
  * @param    {HTTPResponse} response
  * @param    {string} type
  * @param    {number} length
@@ -425,7 +447,9 @@ exports.writeContentType = writeResponseHead;
 
 /**
  * Writes to the file system
+ *
  * @return   {void}
+ *
  * @param    {string} contents
  * @param    {string} fname
  */

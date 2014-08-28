@@ -1,10 +1,11 @@
 /**
  * @author: hrobertking@cathmhoal.com
  *
- * exports.on = on;
- * exports.port = port;
- * exports.start = start;
+ * @exports subscribe as on
+ * @exports port as port;
+ * @exports start as start;
  *
+ * @see The <a href="https://github.com/hrobertking/node-experiments">node-experiments</a> repo for information about the router module
  */
 
 var events = require('events')              // nodejs core
@@ -17,6 +18,7 @@ var events = require('events')              // nodejs core
 
 /**
  * The port the server will listen on
+ *
  * @type  {number}
  */
 Object.defineProperty(exports, 'port', {
@@ -24,7 +26,8 @@ Object.defineProperty(exports, 'port', {
 		return port;
 	},
 	set: function(value) {
-		if (!isNaN(value)) {
+		// use a 16-bit unsigned int, positive values only
+		if (!isNaN(value) && value > 0 && value < 65536) {
 			port = Math.floor(value);
 		}
 	}
@@ -32,7 +35,9 @@ Object.defineProperty(exports, 'port', {
 
 /**
  * Creates a request/response pair
+ *
  * @return   {object}
+ *
  * @param    {http.IncomingMessage} request
  * @param    {http.IncomingMessage} response
  */
@@ -44,7 +49,9 @@ function Message(request, response) {
 
 /**
  * Logs the data
+ *
  * @return   {void}
+ *
  * @param    {server.Message} entry
  */
 function log(entry) {
@@ -74,7 +81,9 @@ function log(entry) {
 
 /**
  * Waits for a specified period of time, in milliseconds, to elapse
+ *
  * @return   {void}
+ *
  * @param    {integer} ms
  */
 function sleep(ms) {
@@ -89,19 +98,23 @@ function sleep(ms) {
 
 /**
  * Starts the server
+ *
  * @return   {void}
+ *
  * @param    {integer} listento
+ *
  * @emits    request-received
  * @emits    response-sent
  */
 function start(listento) {
 	// set the port if it's passed in
 	if (listento) {
-		if (!isNaN(listento)) {
+		if (!isNaN(listento) && listento > 0 && listento < 65536) {
 			port = Math.floor(listento);
 		}
 	}
 
+	// request handler
 	function onRequest(request, response) {
 		var qs = require('querystring') // nodejs core
 		  , url = require('url')        // nodejs core
@@ -111,6 +124,7 @@ function start(listento) {
 		  , auth
 		;
 
+		// get the Basic Authorization username if it's present
 		auth = (new Buffer(((request.headers['authorization'] || '').split(/\s+/).pop() || ''), 'base64')).toString().split(/:/)[0];
 
 		// set the globals
@@ -158,7 +172,9 @@ exports.start = start;
 
 /**
  * Registers event handlers for request-received and response-sent events
+ *
  * @return   {void}
+ *
  * @param    {string} eventname
  * @param    {function} handler
  */

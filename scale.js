@@ -1,9 +1,9 @@
 /**
  * @author: hrobertking@cathmhoal.com
  *
- * exports.domain = domain;
- * exports.range = range;
- * exports.scale = scale;
+ * @exports domain as domain
+ * @exports range as range
+ * @exports scale as scale
  *
  */
 
@@ -14,6 +14,7 @@ var domain = [0, 1]
 
 /**
  * The minimum and maximum values of unscaled numbers
+ *
  * @type     {number[]}
  */
 Object.defineProperty(exports, 'domain', {
@@ -30,6 +31,7 @@ Object.defineProperty(exports, 'domain', {
 
 /**
  * The minimum and maximum values for scaled numbers
+ *
  * @type     {number[]}
  */
 Object.defineProperty(exports, 'range', {
@@ -45,8 +47,10 @@ Object.defineProperty(exports, 'range', {
 });
 
 /**
- * Creates a linear scaling object
+ * Creates a scaling object
+ *
  * @return  {number}
+ *
  * @param  {number} value
  */
 function scale(value) {
