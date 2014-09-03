@@ -2,6 +2,9 @@
  * A server message with request and response
  *
  * @author  hrobertking@cathmhaol.com
+ *
+ * @exports Message as create
+ * @exports subscribe as on
  */
 
 var events = require('events')              // nodejs core

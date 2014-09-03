@@ -22,30 +22,6 @@ Not all experiments are listed here, so your choice of weapons is somewhat limit
 if you believe, based on what you've seen here, I may have something in the works or an update to one
 of the experiments.
 
-### curl
-A handy little module that will run curl in much the same way the http.request works. There are some
-minor differences because of the difference in use-cases.
-
-*object* curl.request([*object|string* options[, *function* callback]);
-
-Example:  
-var curl = require('./curl'),  
- req = curl.request({ 'host':'js.cathmhaol.com', 'protocol':'http' }, responseHandler);
-
-*Methods*
-- *void* abort: Aborts the request
-- *void* end: Ends the request
-- *void* on(*string* eventname, *function* callback): Listens for the event and executes the callback when the event fires
-- *void* setNoDelay([boolean]): Eliminates the TCP delay that is normally present, or reinstates it if false is passed.
-- *void* setSocketKeepAlive(*boolean* enable, *integer* delay): Sets the connection to keep-alive after a specific delay.
-- *void* setTimeout(*integer* ms[, *function* callback): Sets the amount of time before timing out and optionally the callback to execute when the timeout event fires.
-- *void* write(*string* data[, *string* encoding): Writes data to the connection to be posted, with optional encoding (binary is currently the only supported encoding).
-
-*Events*
-- error: Fired when the curl process returns an error
-- response: Fired when the response is received
-- timeout: Fired when a timeout event occurs. If timeout has not been set or is set to 0, a timeout never occurs.
-
 ### cli-opts
 A handy little utility to parse command-line options
 
@@ -56,8 +32,47 @@ if (opts.h || opts.help) {
   //show help  
 }  
 
-*Methods*
+#### Methods
 - *object* parse: Returns an object with named parameters and a copy of all parameters in argv.
+
+### curl
+A handy little module that will run curl in much the same way the http.request works. There are some
+minor differences because of the difference in use-cases.
+
+*object* curl.request([*object|string* options[, *function* callback]);
+
+Example:  
+var curl = require('./curl'),  
+ req = curl.request({ 'host':'js.cathmhaol.com', 'protocol':'http' }, responseHandler);
+
+#### Methods
+- *void* abort: Aborts the request
+- *void* end: Ends the request
+- *void* on(*string* eventname, *function* callback): Listens for the event and executes the callback when the event fires
+- *void* setNoDelay([boolean]): Eliminates the TCP delay that is normally present, or reinstates it if false is passed.
+- *void* setSocketKeepAlive(*boolean* enable, *integer* delay): Sets the connection to keep-alive after a specific delay.
+- *void* setTimeout(*integer* ms[, *function* callback): Sets the amount of time before timing out and optionally the callback to execute when the timeout event fires.
+- *void* write(*string* data[, *string* encoding): Writes data to the connection to be posted, with optional encoding (binary is currently the only supported encoding).
+
+#### Events
+- error: Fired when the curl process returns an error
+- response: Fired when the response is received
+- timeout: Fired when a timeout event occurs. If timeout has not been set or is set to 0, a timeout never occurs.
+
+### message
+The message object used with the *server* and *router* modules
+
+Example:  
+var message = require('./message')
+ msg = message.create(request, response);  
+
+#### Methods
+- *object* create: Creates a message object using the provided request and response objects
+- *void* on(*string* eventname, *function* callback): Listens for the event and executes the callback when the event fires
+
+#### Events
+- request-received: Fired when the request is received
+- response-sent: Fired when the response is sent
 
 ### router
 The routing module used with the *server* and *writer* modules
@@ -66,18 +81,16 @@ Example:
 var router = require('./router');
 router.route(request, response);
 
-*Methods*
+#### Methods
 - *void* on(*string* eventname, *function* handler): Subscribes to the 'error' or 'response-sent' event
 - *void* route(*server.Message* message): Routes a request
 
-*Properties*
+#### Properties
 - *hash* routes: A hash of routes and their defined handlers
 
-Example:  
-var router = require('./route'),  
-server = require('./server'),  
-message = new Message(request, response);  
-router.route(message);
+#### Events
+- request-received: Fired when the request is received
+- response-sent: Fired when the response is sent
 
 ### scale
 A module to calculate a scale for a value given a domain (minimum and maximum possible data values) and a range (minimum and maximum mapped values).
@@ -96,13 +109,17 @@ var server = require('./server');
 server.port = 8080;  
 server.start();
 
-*Methods*
+#### Methods
 - *void* on(*string* eventname, *function* handler): Subscribes to the 'request-received' or 'response-sent' event
 - *void* start(*integer* listento): Starts the web server on the port specified
 
-*Properties*
+#### Properties
 - *string* log: The filename to use for logging (uses NCSA Common Log Format - http://en.wikipedia.org/wiki/Common_Log_Format)
 - *integer* port: The port to listen on.
+
+#### Events
+- request-received: Fired when the request is received
+- response-sent: Fired when the response is sent
 
 ### writer
 A collection of methods used to write to the response stream on the web server.
@@ -111,7 +128,7 @@ Example:
 var writer = require('./writer');  
 writer.writeAsJSON(res, [ {'name':'foo', 'value':'1'}, {'name':'bar', 'value':'2'} ]);
 
-*Methods*
+#### Methods
 - *server.Message* writeAsCSV(*server.Message* message, *object[]* data): Writes the data collection out as comma-separated values with a data element name header row.
 - *server.Message* writeAsFile(*server.Message* message, *stream* file): Writes the file to the message.
 - *server.Message* writeAsHTML(*server.Message* message, *object[]* data): Writes the data collection out as an HTML response using an unordered list

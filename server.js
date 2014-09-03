@@ -1,4 +1,6 @@
 /**
+ * A web server
+ *
  * @author: hrobertking@cathmhoal.com
  *
  * @exports log_file as log
