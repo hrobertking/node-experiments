@@ -46,6 +46,19 @@ var curl = require('./curl'),
 - response: Fired when the response is received
 - timeout: Fired when a timeout event occurs. If timeout has not been set or is set to 0, a timeout never occurs.
 
+### cli-opts
+A handy little utility to parse command-line options
+
+Example:  
+var cli = require('./cli-opts'),  
+ opts = cli.parse(process.argv.slice(2));  
+if (opts.h || opts.help) {  
+  //show help  
+}  
+
+*Methods*
+- *object* parse: Returns an object with named parameters and a copy of all parameters in argv.
+
 ### router
 The routing module used with the *server* and *writer* modules
 
