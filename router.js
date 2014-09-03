@@ -2,6 +2,7 @@
  * @author: hrobertking@cathmhoal.com
  *
  * @exports subscribe as on
+ * @exports handle as pass
  * @exports routes as routes
  * @exports route as route
  *
@@ -83,6 +84,17 @@ Object.defineProperty(exports, 'routes', {
 		return routes;
 	}
 });
+
+/**
+ * Starts the handling
+ * @return   {void}
+ * @param    {server.Message} message
+ * @emits    request-received
+ */
+function handle(message) {
+	emitter.emit('request-received', message);
+}
+exports.pass = handle;
 
 /**
  * Routes a request to a response
