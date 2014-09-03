@@ -1,6 +1,7 @@
 /**
  * @author: hrobertking@cathmhoal.com
  *
+ * @exports log_file as log
  * @exports subscribe as on
  * @exports port as port;
  * @exports start as start;
@@ -9,17 +10,35 @@
  */
 
 var events = require('events')              // nodejs core
+  , fs = require('fs')                      // nodejs core
   , http = require('http')                  // nodejs core
   , router = require('./router')            // application-specific router
+  , log_file                                // filename of the log
   , message                                 // request-response pair
   , port                                    // port used by web-server to listen
   , emitter = new events.EventEmitter()     // event emitter
 ;
 
 /**
+ * The filename the server will log to
+ *
+ * @type     {string}
+ */
+Object.defineProperty(exports, 'log', {
+	get: function() {
+		return log_file;
+	},
+	set: function(value) {
+		if (typeof value === 'string' && value !== '') {
+			log_file = value;
+		}
+	}
+});
+
+/**
  * The port the server will listen on
  *
- * @type  {number}
+ * @type     {number}
  */
 Object.defineProperty(exports, 'port', {
 	get: function() {
@@ -53,30 +72,44 @@ function Message(request, response) {
  * @return   {void}
  *
  * @param    {server.Message} entry
+ *
+ * @emits    log-error
  */
 function log(entry) {
-      var  mons = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+	var mons = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+	  , entry
+	;
 
-      console.log( ( entry.request.connection.remoteAddress || '-' ) + '\t' +                           // Get the IP of the user-agent
-            ( '-' ) + '\t' +                                                                            // RFC 1413 identity of client (not usually known)
-            ( '-' ) + '\t' +                                                                            // user id of end-user (not usually known)
-            ( '[' + entry.response.date.getDate() + '/' +                                               // Get completion time date
-                    mons[entry.response.date.getMonth()] + '/' +                                        // Get completion time month name
-                    entry.response.date.getFullYear() + ':' +                                           // Get completion time year
-                    ('0' + entry.response.date.getHours()).substr(-2) + ':' +                           // Get completion time hours
-                    ('0' + entry.response.date.getMinutes()).substr(-2) + ':' +                         // Get completion time minutes
-                    ('0' + entry.response.date.getSeconds()).substr(-2) + ' ' +                         // Get completion time seconds
-                    ( (entry.response.date.getTimezoneOffset() > 0 ? '-' : '') +                        // flip the sign - JS represents offset backwards
-                      ('0' + Math.floor(entry.response.date.getTimezoneOffset() / 60)).substr(-2) +     // Get the hours in the timezone offset
-                      ('0' + (entry.response.date.getTimezoneOffset() % 60)).substr(-2)                 // Get the minutes in the timezone offset
-                    ) + ']' ) + '\t' +                                                                  // Time response finished, format %d/%b/%Y:%H:%M:%S %z
-            ( '"' + (entry.request.method || 'GET' ) + ' ' +                                            // Get the HTTP verb from the request
-                    (entry.request.url || '-' ) + ' ' +                                                 // Get the url from the request
-                    ('HTTP/' + (entry.request.httpVersion || '1.0')) +                                  // Get the HTTP version from the request
-                    ('"') ) + '\t' +                                                                    // Request line
-            ( entry.response.statusCode || '-' ) + '\t' +                                               // HTTP status code
-            ( entry.response.bytes || '-' )
-          );
+	entry = ( entry.request.connection.remoteAddress || '-' ) + '\t' +                           // Get the IP of the user-agent
+	        ( '-' ) + '\t' +                                                                            // RFC 1413 identity of client (not usually known)	
+	        ( '-' ) + '\t' +                                                                            // user id of end-user (not usually known)
+	        ( '[' + entry.response.date.getDate() + '/' +                                               // Get completion time date
+	              mons[entry.response.date.getMonth()] + '/' +                                        // Get completion time month name
+	              entry.response.date.getFullYear() + ':' +                                           // Get completion time year
+	              ('0' + entry.response.date.getHours()).substr(-2) + ':' +                           // Get completion time hours
+	              ('0' + entry.response.date.getMinutes()).substr(-2) + ':' +                         // Get completion time minutes
+	              ('0' + entry.response.date.getSeconds()).substr(-2) + ' ' +                         // Get completion time seconds
+	              ( (entry.response.date.getTimezoneOffset() > 0 ? '-' : '') +                        // flip the sign - JS represents offset backwards
+	                ('0' + Math.floor(entry.response.date.getTimezoneOffset() / 60)).substr(-2) +     // Get the hours in the timezone offset
+	                ('0' + (entry.response.date.getTimezoneOffset() % 60)).substr(-2)                 // Get the minutes in the timezone offset
+	              ) + ']' ) + '\t' +                                                                  // Time response finished, format %d/%b/%Y:%H:%M:%S %z
+	        ( '"' + (entry.request.method || 'GET' ) + ' ' +                                            // Get the HTTP verb from the request
+	              (entry.request.url || '-' ) + ' ' +                                                 // Get the url from the request
+	              ('HTTP/' + (entry.request.httpVersion || '1.0')) +                                  // Get the HTTP version from the request
+	              ('"') ) + '\t' +                                                                    // Request line
+	        ( entry.response.statusCode || '-' ) + '\t' +                                               // HTTP status code
+	        ( entry.response.bytes || '-' )
+          ;
+
+	if (log_file && log_file !== '') {
+		fs.appendFile(log_file, entry, function(err) {
+			if (err) {
+				emitter.emit('log-error', err);
+			}
+		});
+	} else {
+		console.log(entry);
+	}
 }
 
 /**
@@ -171,7 +204,7 @@ function start(listento) {
 exports.start = start;
 
 /**
- * Registers event handlers for request-received and response-sent events
+ * Registers event handlers for request-received, response-sent, and log-error events
  *
  * @return   {void}
  *
@@ -179,7 +212,7 @@ exports.start = start;
  * @param    {function} handler
  */
 function subscribe(eventname, handler) {
-	if ((/request\-received|response\-sent/).test(eventname)) {
+	if ((/request\-received|response\-sent|log\-error/).test(eventname)) {
 		emitter.on(eventname, handler);
 	}
 }

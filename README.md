@@ -101,6 +101,7 @@ server.start();
 - *void* start(*integer* listento): Starts the web server on the port specified
 
 *Properties*
+- *string* log: The filename to use for logging (uses NCSA Common Log Format - http://en.wikipedia.org/wiki/Common_Log_Format)
 - *integer* port: The port to listen on.
 
 ### writer
