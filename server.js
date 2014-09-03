@@ -12,6 +12,7 @@
 var events = require('events')              // nodejs core
   , fs = require('fs')                      // nodejs core
   , http = require('http')                  // nodejs core
+  , message = require('./message')          // message module
   , router = require('./router')            // application-specific router
   , log_file                                // filename of the log
   , message                                 // request-response pair
@@ -53,20 +54,6 @@ Object.defineProperty(exports, 'port', {
 });
 
 /**
- * Creates a request/response pair
- *
- * @return   {object}
- *
- * @param    {http.IncomingMessage} request
- * @param    {http.IncomingMessage} response
- */
-function Message(request, response) {
-	this.request = request;
-	this.response = response;
-	return this;
-}
-
-/**
  * Logs the data
  *
  * @return   {void}
@@ -76,35 +63,12 @@ function Message(request, response) {
  * @emits    log-error
  */
 function log(entry) {
-	var mons = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-	  , entry
-	;
-
-	entry = ( entry.request.connection.remoteAddress || '-' ) + '\t' +                           // Get the IP of the user-agent
-	        ( '-' ) + '\t' +                                                                            // RFC 1413 identity of client (not usually known)	
-	        ( '-' ) + '\t' +                                                                            // user id of end-user (not usually known)
-	        ( '[' + entry.response.date.getDate() + '/' +                                               // Get completion time date
-	              mons[entry.response.date.getMonth()] + '/' +                                        // Get completion time month name
-	              entry.response.date.getFullYear() + ':' +                                           // Get completion time year
-	              ('0' + entry.response.date.getHours()).substr(-2) + ':' +                           // Get completion time hours
-	              ('0' + entry.response.date.getMinutes()).substr(-2) + ':' +                         // Get completion time minutes
-	              ('0' + entry.response.date.getSeconds()).substr(-2) + ' ' +                         // Get completion time seconds
-	              ( (entry.response.date.getTimezoneOffset() > 0 ? '-' : '') +                        // flip the sign - JS represents offset backwards
-	                ('0' + Math.floor(entry.response.date.getTimezoneOffset() / 60)).substr(-2) +     // Get the hours in the timezone offset
-	                ('0' + (entry.response.date.getTimezoneOffset() % 60)).substr(-2)                 // Get the minutes in the timezone offset
-	              ) + ']' ) + '\t' +                                                                  // Time response finished, format %d/%b/%Y:%H:%M:%S %z
-	        ( '"' + (entry.request.method || 'GET' ) + ' ' +                                            // Get the HTTP verb from the request
-	              (entry.request.url || '-' ) + ' ' +                                                 // Get the url from the request
-	              ('HTTP/' + (entry.request.httpVersion || '1.0')) +                                  // Get the HTTP version from the request
-	              ('"') ) + '\t' +                                                                    // Request line
-	        ( entry.response.statusCode || '-' ) + '\t' +                                               // HTTP status code
-	        ( entry.response.bytes || '-' )
-          ;
+	entry = entry.toString();
 
 	if (log_file && log_file !== '') {
 		fs.appendFile(log_file, entry, function(err) {
 			if (err) {
-				emitter.emit('log-error', err);
+				emitter.emit('log-error', {error: err, entry:entry});
 			}
 		});
 	} else {
@@ -157,49 +121,35 @@ function start(listento) {
 		  , auth
 		;
 
-		// get the Basic Authorization username if it's present
-		auth = (new Buffer(((request.headers['authorization'] || '').split(/\s+/).pop() || ''), 'base64')).toString().split(/:/)[0];
-
-		// set the globals
-		message = new Message(request, response);
-		message.request.date = new Date();
-		message.request.setEncoding('utf8');
-		message.request.username = auth;
-		message.request.on('data', function(chunk) {
-			posted += chunk;
-			bytes_in += Buffer.byteLength(chunk);
-		});
-		message.request.on('end', function() {
-			message.request.bytes = bytes_in;
-			message.request.data_sent = posted;
-			message.request.cgi = qs.parse(message.request.method === 'POST' ? message.request.data_sent : url.parse(message.request.url).query);
-
-			// emit the request event
-			emitter.emit('request-received', message);
-
-			// sleep if it's requested
-			if (message.request.cgi.latency) {
-				sleep(message.request.cgi.latency);
-			}
-
-			// route the message
-			router.route(message);
-		});
+		router.pass(message.create(request, response));
 	}
 
+	// route the request
+	router.on('request-received', function(message) {
+		emitter.emit('request-received', message);
+
+		// sleep if it's requested
+		if (message.request.cgi.latency) {
+			sleep(message.request.cgi.latency);
+		}
+
+		// route the message
+		router.route(message);
+	});
 	// set the handler to log responses sent
-	router.on('response-sent', function(data) {
-		data.response.date = new Date();
-		log(data);
+	router.on('response-sent', function(message) {
 		emitter.emit('response-sent', message);
-		data.response.end();
+		log(message);
+	});
+
+	// handle log errors
+	emitter.on('log-error', function(params) {
+		console.log('Error: ' + params.error);
+		console.log(params.entry);
 	});
 
 	// create the server to listen on the specified port
 	http.createServer(onRequest).listen(port);
-
-	// log that the server is started
-	console.log('\nServer has started on ' + port);
 }
 exports.start = start;
 
