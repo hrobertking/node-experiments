@@ -28,14 +28,14 @@ var events = require('events')              // nodejs core
  * @type     {string}
  */
 Object.defineProperty(exports, 'log', {
-	get: function() {
-		return log_file;
-	},
-	set: function(value) {
-		if (typeof value === 'string' && value !== '') {
-			log_file = value;
-		}
-	}
+  get: function() {
+    return log_file;
+  },
+  set: function(value) {
+    if (typeof value === 'string' && value !== '') {
+      log_file = value;
+    }
+  }
 });
 
 /**
@@ -44,15 +44,15 @@ Object.defineProperty(exports, 'log', {
  * @type     {number}
  */
 Object.defineProperty(exports, 'port', {
-	get: function() {
-		return port;
-	},
-	set: function(value) {
-		// use a 16-bit unsigned int, positive values only
-		if (!isNaN(value) && value > 0 && value < 65536) {
-			port = Math.floor(value);
-		}
-	}
+  get: function() {
+    return port;
+  },
+  set: function(value) {
+    // use a 16-bit unsigned int, positive values only
+    if (!isNaN(value) && value > 0 && value < 65536) {
+      port = Math.floor(value);
+    }
+  }
 });
 
 /**
@@ -65,17 +65,17 @@ Object.defineProperty(exports, 'port', {
  * @emits    log-error
  */
 function log(entry) {
-	entry = entry.toString();
+  entry = entry.toString();
 
-	if (log_file && log_file !== '') {
-		fs.appendFile(log_file, entry, function(err) {
-			if (err) {
-				emitter.emit('log-error', {error: err, entry:entry});
-			}
-		});
-	} else {
-		console.log(entry);
-	}
+  if (log_file && log_file !== '') {
+    fs.appendFile(log_file, entry, function(err) {
+      if (err) {
+        emitter.emit('log-error', {error: err, entry:entry});
+      }
+    });
+  } else {
+    console.log(entry);
+  }
 }
 
 /**
@@ -86,13 +86,13 @@ function log(entry) {
  * @param    {integer} ms
  */
 function sleep(ms) {
-	var end = (new Date()).getTime() + (isNaN(ms) ? 0 : Math.floor(ms))
-	  , tick = 0
-	;
-	while ((new Date()).getTime() < end) {
-		tick += 1;
-	}
-	return;
+  var end = (new Date()).getTime() + (isNaN(ms) ? 0 : Math.floor(ms))
+    , tick = 0
+  ;
+  while ((new Date()).getTime() < end) {
+    tick += 1;
+  }
+  return;
 }
 
 /**
@@ -106,52 +106,52 @@ function sleep(ms) {
  * @emits    response-sent
  */
 function start(listento) {
-	// set the port if it's passed in
-	if (listento) {
-		if (!isNaN(listento) && listento > 0 && listento < 65536) {
-			port = Math.floor(listento);
-		}
-	}
+  // set the port if it's passed in
+  if (listento) {
+    if (!isNaN(listento) && listento > 0 && listento < 65536) {
+      port = Math.floor(listento);
+    }
+  }
 
-	// request handler
-	function onRequest(request, response) {
-		var qs = require('querystring') // nodejs core
-		  , url = require('url')        // nodejs core
-		  , bytes_out = 0               // bytes written by writer
-		  , bytes_in = 0                // bytes read from request
-		  , posted = ''                 // data sent in the request
-		  , auth
-		;
+  // request handler
+  function onRequest(request, response) {
+    var qs = require('querystring') // nodejs core
+      , url = require('url')        // nodejs core
+      , bytes_out = 0               // bytes written by writer
+      , bytes_in = 0                // bytes read from request
+      , posted = ''                 // data sent in the request
+      , auth
+    ;
 
-		router.pass(message.create(request, response));
-	}
+    router.pass(message.create(request, response));
+  }
 
-	// route the request
-	router.on('request-received', function(message) {
-		emitter.emit('request-received', message);
+  // route the request
+  router.on('request-received', function(message) {
+    emitter.emit('request-received', message);
 
-		// sleep if it's requested
-		if (message.request.cgi.latency) {
-			sleep(message.request.cgi.latency);
-		}
+    // sleep if it's requested
+    if (message.request.cgi.latency) {
+      sleep(message.request.cgi.latency);
+    }
 
-		// route the message
-		router.route(message);
-	});
-	// set the handler to log responses sent
-	router.on('response-sent', function(message) {
-		emitter.emit('response-sent', message);
-		log(message);
-	});
+    // route the message
+    router.route(message);
+  });
+  // set the handler to log responses sent
+  router.on('response-sent', function(message) {
+    emitter.emit('response-sent', message);
+    log(message);
+  });
 
-	// handle log errors
-	emitter.on('log-error', function(params) {
-		console.log('Error: ' + params.error);
-		console.log(params.entry);
-	});
+  // handle log errors
+  emitter.on('log-error', function(params) {
+    console.log('Error: ' + params.error);
+    console.log(params.entry);
+  });
 
-	// create the server to listen on the specified port
-	http.createServer(onRequest).listen(port);
+  // create the server to listen on the specified port
+  http.createServer(onRequest).listen(port);
 }
 exports.start = start;
 
@@ -164,8 +164,8 @@ exports.start = start;
  * @param    {function} handler
  */
 function subscribe(eventname, handler) {
-	if ((/request\-received|response\-sent|log\-error/).test(eventname)) {
-		emitter.on(eventname, handler);
-	}
+  if ((/request\-received|response\-sent|log\-error/).test(eventname)) {
+    emitter.on(eventname, handler);
+  }
 }
 exports.on = subscribe;

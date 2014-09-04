@@ -23,6 +23,17 @@ routes['/favicon.ico'] = ignored;
 /* ^ -------------------------- ROUTING HANDLERS -------------------------------- ^ */
 
 /**
+ * The routing table
+ *
+ * @type     {object}
+ */
+Object.defineProperty(exports, 'routes', {
+  get: function() {
+    return routes;
+  }
+});
+
+/**
  * Ignores the request by sending back an empty document with a 200 status code
  *
  * @return   {message}
@@ -32,7 +43,7 @@ routes['/favicon.ico'] = ignored;
  * @emits    response-sent
  */
 function ignored(message) {
-	emitter.emit('response-sent', writer.writeEmptyDocument(message));
+  emitter.emit('response-sent', writer.writeEmptyDocument(message));
 }
 
 /**
@@ -46,44 +57,33 @@ function ignored(message) {
  * @emits    error
  */
 function unhandled(message) {
-	var fs = require('fs')
-	  , path = require('path')
-	  , filename = path.join(process.cwd(), uri.pathname)                 // the filename represented by the uri
-	;
+  var fs = require('fs')
+    , path = require('path')
+    , filename = path.join(process.cwd(), uri.pathname)                 // the filename represented by the uri
+  ;
 
-	try {
-		// check the path against the file system
-		fs.exists(filename, function(exists) {
-			if (exists && fs.statSync(filename).isDirectory()) {
-				filename += '/index.htm';
-				fs.exists(filename, function(exists) {
-					if (exists) {
-						emitter.emit('response-sent', writer.writeAsFile(message, fs.readFileSync(filename, 'binary')));
-					} else {
-						emitter.emit('response-sent', writer.writeNotFound(message));
-					}
-				});
-			} else if (exists) {
-				emitter.emit('response-sent', writer.writeAsFile(message, fs.readFileSync(filename, 'binary')));
-			} else {
-				emitter.emit('response-sent', writer.writeNotFound(message));
-			}
-		});
-	} catch (err) {
-		emitter.emit('error', writer.writeServerError(message, err));
-	}
+  try {
+    // check the path against the file system
+    fs.exists(filename, function(exists) {
+      if (exists && fs.statSync(filename).isDirectory()) {
+        filename += '/index.htm';
+        fs.exists(filename, function(exists) {
+          if (exists) {
+            emitter.emit('response-sent', writer.writeAsFile(message, fs.readFileSync(filename, 'binary')));
+          } else {
+            emitter.emit('response-sent', writer.writeNotFound(message));
+          }
+        });
+      } else if (exists) {
+        emitter.emit('response-sent', writer.writeAsFile(message, fs.readFileSync(filename, 'binary')));
+      } else {
+        emitter.emit('response-sent', writer.writeNotFound(message));
+      }
+    });
+  } catch (err) {
+    emitter.emit('error', writer.writeServerError(message, err));
+  }
 }
-
-/**
- * The routing table
- *
- * @type     {object}
- */
-Object.defineProperty(exports, 'routes', {
-	get: function() {
-		return routes;
-	}
-});
 
 /**
  * Starts the handling
@@ -92,7 +92,7 @@ Object.defineProperty(exports, 'routes', {
  * @emits    request-received
  */
 function handle(message) {
-	emitter.emit('request-received', message);
+  emitter.emit('request-received', message);
 }
 exports.pass = handle;
 
@@ -106,22 +106,22 @@ exports.pass = handle;
  * @emits    error
  */
 function route(message) {
-	var url = require('url')
-	  , handler
-	;
+  var url = require('url')
+    , handler
+  ;
 
-	// set the URI used by all the functions
-	uri = url.parse(message.request.url);
+  // set the URI used by all the functions
+  uri = url.parse(message.request.url);
 
-	// get the handler for the requested resource
-	handler = routes[uri.pathname] || unhandled;
+  // get the handler for the requested resource
+  handler = routes[uri.pathname] || unhandled;
 
-	if (typeof handler === 'function') {
-		handler(message);
-	} else {
-		// oops.
-		emitter.emit('error', writer.writeServerError(message, 'Unable to route request'));
-	}
+  if (typeof handler === 'function') {
+    handler(message);
+  } else {
+    // oops.
+    emitter.emit('error', writer.writeServerError(message, 'Unable to route request'));
+  }
 }
 exports.route = route;
 
@@ -134,8 +134,8 @@ exports.route = route;
  * @param    {function} handler
  */
 function subscribe(eventname, handler) {
-	if ((/request\-received|response\-sent/).test(eventname)) {
-		emitter.on(eventname, handler);
-	}
+  if ((/request\-received|response\-sent/).test(eventname)) {
+    emitter.on(eventname, handler);
+  }
 }
 exports.on = subscribe;
