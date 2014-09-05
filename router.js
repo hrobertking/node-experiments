@@ -69,13 +69,13 @@ function unhandled(message) {
         filename += '/index.htm';
         fs.exists(filename, function(exists) {
           if (exists) {
-            emitter.emit('response-sent', writer.writeAsFile(message, fs.readFileSync(filename, 'binary')));
+            emitter.emit('response-sent', writer.writeAsFile(message, fs.readFileSync(filename, 'binary'), path.extname(filename).replace(/^\./, '')));
           } else {
             emitter.emit('response-sent', writer.writeNotFound(message));
           }
         });
       } else if (exists) {
-        emitter.emit('response-sent', writer.writeAsFile(message, fs.readFileSync(filename, 'binary')));
+        emitter.emit('response-sent', writer.writeAsFile(message, fs.readFileSync(filename, 'binary'), path.extname(filename).replace(/^\./, '')));
       } else {
         emitter.emit('response-sent', writer.writeNotFound(message));
       }
