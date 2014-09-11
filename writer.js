@@ -20,7 +20,6 @@
 var fs = require('fs')
   , path = require('path')
   , filename = ''
-  , serverMessage
 ;
 
 /**
@@ -57,9 +56,6 @@ function writeDataCsv(message, data) {
     , datum       // an individual data element
     , str = ''    // the content to write out
   ;
-
-  // set a global to make passing data back and forth easier
-  serverMessage = message;
 
   if (message.response) {
     if (data) {
@@ -102,11 +98,11 @@ function writeDataCsv(message, data) {
 
       writeToFileSystem(str, fname);
     }
-  }
 
-  serverMessage.response.bytes = Buffer.byteLength(str.toString());
-  serverMessage.response.date = new Date();
-  return serverMessage;
+    message.response.bytes = Buffer.byteLength(str.toString());
+    message.response.date = new Date();
+  }
+  return message;
 }
 exports.writeAsCSV = writeDataCsv;
 
@@ -126,9 +122,6 @@ function writeDataHtml(message, data) {
     , key         // item key index
     , str = ''    // the content to write out
   ;
-
-  // set a global to make passing data back and forth easier
-  serverMessage = message;
 
   if (message.response) {
     if (data) {
@@ -152,11 +145,11 @@ function writeDataHtml(message, data) {
 
       writeToFileSystem(str, fname);
     }
-  }
 
-  serverMessage.response.bytes = Buffer.byteLength(str.toString());
-  serverMessage.response.date = new Date();
-  return serverMessage;
+    message.response.bytes = Buffer.byteLength(str.toString());
+    message.response.date = new Date();
+  }
+  return message;
 }
 exports.writeAsHTML = writeDataHtml;
 
@@ -174,9 +167,6 @@ function writeDataJson(message, data) {
     , str = [ ]  // the content to write out
   ;
 
-  // set a global to make passing data back and forth easier
-  serverMessage = message;
-
   if (message.response) {
     if (data) {
       for (i in data) {
@@ -190,11 +180,11 @@ function writeDataJson(message, data) {
 
       writeToFileSystem(str, fname);
     }
-  }
 
-  serverMessage.response.bytes = Buffer.byteLength(str.toString());
-  serverMessage.response.date = new Date();
-  return serverMessage;
+    message.response.bytes = Buffer.byteLength(str.toString());
+    message.response.date = new Date();
+  }
+  return message;
 }
 exports.writeAsJSON = writeDataJson;
 
@@ -218,9 +208,6 @@ function writeDataXml(message, data, tagNameRoot, tagNameChild) {
     , schema = '' // xml-schema
     , str = ''    // the content to write out
   ;
-
-  // set a global to make passing data back and forth easier
-  serverMessage = message;
 
   tagNameRoot = tagNameRoot || 'root';
   tagNameChild = tagNameChild || 'child';
@@ -276,11 +263,11 @@ function writeDataXml(message, data, tagNameRoot, tagNameChild) {
 
       writeToFileSystem(str, fname);
     }
-  }
 
-  serverMessage.response.bytes = Buffer.byteLength(str.toString());
-  serverMessage.response.date = new Date();
-  return serverMessage;
+    message.response.bytes = Buffer.byteLength(str.toString());
+    message.response.date = new Date();
+  }
+  return message;
 }
 exports.writeAsXML = writeDataXml;
 
@@ -295,18 +282,16 @@ exports.writeAsXML = writeDataXml;
 function writeResponseContents(message, data) {
   var str = '';
 
-  // set a global to make passing data back and forth easier
-  serverMessage = message;
-
   if (message.response) {
     if (data) {
-      str += contents.toString('utf8');
+      str += data.toString('utf8');
     }
     message.response.write(str);
+
+    message.response.bytes = Buffer.byteLength(str);
+    message.response.date = new Date();
   }
-  serverMessage.response.bytes = Buffer.byteLength(str);
-  serverMessage.response.date = new Date();
-  return serverMessage;
+  return message;
 }
 exports.writeContents = writeResponseContents;
 
@@ -320,9 +305,6 @@ exports.writeContents = writeResponseContents;
 function writeResponse404(message) {
   var str = '';
 
-  // set a global to make passing data back and forth easier
-  serverMessage = message;
-
   if (message.response) {
     str += '<!DOCTYPE html>';
     str += '\t<head><title>404 - Not Found</title></head>\n';
@@ -331,11 +313,11 @@ function writeResponse404(message) {
 
     message.response.writeHead(404, {'Content-Type': 'text/html', 'Content-length': str.length});
     message.response.write(str);
-  }
 
-  serverMessage.response.bytes = Buffer.byteLength(str.toString());
-  serverMessage.response.date = new Date();
-  return serverMessage;
+    message.response.bytes = Buffer.byteLength(str.toString());
+    message.response.date = new Date();
+  }
+  return message;
 }
 exports.writeNotFound = writeResponse404;
 
@@ -347,16 +329,13 @@ exports.writeNotFound = writeResponse404;
  * @param    {server.Message} message
  */
 function writeResponseEmpty(message) {
-  // set a global to make passing data back and forth easier
-  serverMessage = message;
-
   if (message.response) {
     writeResponseHead(message.response, 'html', 0);
-  }
 
-  serverMessage.response.bytes = 0;
-  serverMessage.response.date = new Date();
-  return serverMessage;
+    message.response.bytes = 0;
+    message.response.date = new Date();
+  }
+  return message;
 }
 exports.writeEmptyDocument = writeResponseEmpty;
 
@@ -371,19 +350,16 @@ exports.writeEmptyDocument = writeResponseEmpty;
 function writeResponseError(message, err) {
   var str = '';
 
-  // set a global to make passing data back and forth easier
-  serverMessage = message;
-
   if (message.response) {
     str = (err || 'Ouch. A server error has occurred') + '\n';
 
     message.response.writeHead(500, {'Content-Type': 'text/plain', 'Content-length': str.length});
     message.response.write(str);
-  }
 
-  serverMessage.response.bytes = Buffer.byteLength(contents.toString());
-  serverMessage.response.date = new Date();
-  return serverMessage;
+    message.response.bytes = Buffer.byteLength(contents.toString());
+    message.response.date = new Date();
+  }
+  return message;
 }
 exports.writeServerError = writeResponseError;
 
@@ -401,9 +377,6 @@ function writeResponseFile(message, data, type) {
 
   type = (type || '').toLowerCase();
 
-  // set a global to make passing data back and forth easier
-  serverMessage = message;
-
   if (message.response) {
     if (data) {
       str += data.toString('binary');
@@ -411,11 +384,11 @@ function writeResponseFile(message, data, type) {
       writeResponseHead(message.response, type, Buffer.byteLength(str));
       message.response.write(str);
     }
-  }
 
-  serverMessage.response.bytes = Buffer.byteLength(str);
-  serverMessage.response.date = new Date();
-  return serverMessage;
+    message.response.bytes = Buffer.byteLength(str);
+    message.response.date = new Date();
+  }
+  return message;
 }
 exports.writeAsFile = writeResponseFile;
 
