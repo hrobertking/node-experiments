@@ -140,6 +140,10 @@ function start(listento) {
   });
   // set the handler to log responses sent
   router.on('response-sent', function(message) {
+    if (message.response) {
+      message.response.date = message.response.date || new Date();
+      message.response.end();
+    }
     emitter.emit('response-sent', message);
     log(message);
   });
