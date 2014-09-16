@@ -20,7 +20,9 @@ function parse(args) {
 
   // If the first two args are the script call, drop them
   if (args[0] === 'node' && args[1].indexOf('.js')) {
+    opts._command = args[1];
     args.splice(0, 2);
+    opts.argv = args;
   }
 
   // Loop through all the options args
