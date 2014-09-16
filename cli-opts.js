@@ -41,8 +41,10 @@ function parse(args) {
         args.splice(0, 1);
       }
     } else {
-      opts[args[0]] = args[0];
-      args.splice(0, 1);
+      values = (opts._unnamed || '').split(',');                                 // get the current value for the unnamed arguments
+      values.push(args[0]);                                                      // add this value to it
+      opts._unnamed = values.join(',').replace(/^\,/, '').replace(/\,$/, '');    // store the values in the property of the object
+      args.splice(0, 1);                                                         // delete teh processed arg from the array
     }
   }
 
