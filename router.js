@@ -64,22 +64,20 @@ function unhandled(message) {
 
   try {
     // check the path against the file system
-    fs.exists(filename, function(exists) {
-      if (exists && fs.statSync(filename).isDirectory()) {
+    if (fs.existsSync(filename)) {
+      if (fs.statSync(filename).isDirectory()) {
         filename += '/index.htm';
-        fs.exists(filename, function(exists) {
-          if (exists) {
-            emitter.emit('response-sent', writer.writeAsFile(message, fs.readFileSync(filename, 'binary'), path.extname(filename).replace(/^\./, '')));
-          } else {
-            emitter.emit('response-sent', writer.writeNotFound(message));
-          }
-        });
-      } else if (exists) {
-        emitter.emit('response-sent', writer.writeAsFile(message, fs.readFileSync(filename, 'binary'), path.extname(filename).replace(/^\./, '')));
+        if (fs.existsSync(filename)) {
+          emitter.emit('response-sent', writer.writeAsFile(message, fs.readFileSync(filename, 'binary'), path.extname(filename).replace(/^\./, '')));
+        } else {
+          emitter.emit('response-sent', writer.writeNotFound(message));
+        }
       } else {
-        emitter.emit('response-sent', writer.writeNotFound(message));
+        emitter.emit('response-sent', writer.writeAsFile(message, fs.readFileSync(filename, 'binary'), path.extname(filename).replace(/^\./, '')));
       }
-    });
+    } else {
+      emitter.emit('response-sent', writer.writeNotFound(message));
+    }
   } catch (err) {
     emitter.emit('error', writer.writeServerError(message, err));
   }
