@@ -3,24 +3,43 @@
  *
  * @author: hrobertking@cathmhoal.com
  *
+ * @exports host as host
  * @exports log_file as log
+ * @exports port as port
+ * @exports cert as cert
  * @exports subscribe as on
- * @exports port as port;
- * @exports start as start;
+ * @exports start as start
  *
  * @see The <a href="https://github.com/hrobertking/node-experiments">node-experiments</a> repo for information about the router module
  */
 
-var events = require('events')              // nodejs core
-  , fs = require('fs')                      // nodejs core
-  , http = require('http')                  // nodejs core
-  , message = require('./message')          // message module
-  , router = require('./router')            // application-specific router
-  , log_file                                // filename of the log
-  , message                                 // request-response pair
-  , port                                    // port used by web-server to listen
-  , emitter = new events.EventEmitter()     // event emitter
+var events = require('events')                        // nodejs core
+  , fs = require('fs')                                // nodejs core
+  , http = require('http')                            // nodejs core
+  , message = require('./message')                    // message module
+  , router = require('./router')                      // application-specific router
+  , emitter = new events.EventEmitter()               // event emitter
+  , host                                              // the hostname or host address
+  , log_file                                          // filename of the log
+  , port                                              // port used by web-server to listen
+  , ssl_options = { cert:null, key:null, pfx:null }   // ssl options object to contain 'key' and 'cert'
 ;
+
+/**
+ * The address the server will created on
+ *
+ * @type     {string}
+ */
+Object.defineProperty(exports, 'host', {
+  get: function() {
+    return host;
+  },
+  set: function(value) {
+    if (typeof value === 'string' && value !== '') {
+      host = value;
+    }
+  }
+});
 
 /**
  * The filename the server will log to
@@ -54,6 +73,80 @@ Object.defineProperty(exports, 'port', {
     }
   }
 });
+
+/**
+ * Sets the ssl options
+ *
+ * @return   {void}
+ *
+ * @param    {string} key
+ * @param    {string} certificate
+ */
+function cert(key, certificate) {
+  var path = require('path')
+    , base64 = /^([A-Z0-9\+\/]{4})*([A-Z0-9\+\/]{4}|[A-Z0-9\+\/]{3}=|[A-Z0-9\+\/]{2}==)$/i
+    , contents = {
+        cert:null,
+        key:null,
+        pfx:null
+      }
+    ;
+
+
+  // check the 'key' to see if it's likely that it's base64 encoded
+  if (base64.test(key)) {
+    contents.key = key;
+  } else {
+    // figure out if we have a pfx or a key/certificate pair
+    switch (path.extname(key).replace(/^\./, '')) {
+      case 'pem':
+        try {
+          contents.key = fs.readFileSync(key);
+        } catch(ignore) {
+        }
+        break;
+      case 'pfx':
+        try {
+          contents.pfx = fs.readFileSync(key);
+        } catch(ignore) {
+        }
+        break;
+    }
+  }
+
+  // check the 'certificate' to see if it's likely that it's base64 encoded
+  if (base64.test(certificate)) {
+    contents.cert = certificate;
+  } else {
+    // figure out if we have a pfx or a key/certificate pair
+    switch (path.extname(certificate).replace(/^\./, '')) {
+      case 'pem':
+        try {
+          contents.cert = fs.readFileSync(certificate);
+        } catch(ignore) {
+        }
+        break;
+      case 'pfx':
+        try {
+          contents.pfx = fs.readFileSync(certificate);
+        } catch(ignore) {
+        }
+        break;
+    }
+  }
+
+  // set the ssl_options - test truthy so we skip empty strings
+  if (contents.cert) {
+    ssl_options.cert = contents.cert;
+  }
+  if (contents.key) {
+    ssl_options.key = contents.key;
+  }
+  if (contents.pfx) {
+    ssl_options.pfx = contents.pfx;
+  }
+}
+exports.cert = cert;
 
 /**
  * Logs the data
@@ -154,8 +247,13 @@ function start(listento) {
     console.log(params.entry);
   });
 
-  // create the server to listen on the specified port
-  http.createServer(onRequest).listen(port);
+  // create the server to listen on the specified host and port
+  if ((ssl_options.key && ssl_options.cert) || ssl_options.pfx) {
+    // create a secure server
+    https.createServer(ssl_options, onRequest).listen(port, host);
+  } else {
+    http.createServer(onRequest).listen(port, host);
+  }
 }
 exports.start = start;
 
