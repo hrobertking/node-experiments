@@ -3,12 +3,13 @@
  *
  * @author: hrobertking@cathmhoal.com
  *
+ * @exports cert as cert
  * @exports host as host
  * @exports log_file as log
  * @exports port as port
- * @exports cert as cert
- * @exports subscribe as on
+ * @exports router as router
  * @exports start as start
+ * @exports subscribe as on
  *
  * @see The <a href="https://github.com/hrobertking/node-experiments">node-experiments</a> repo for information about the router module
  */
@@ -71,6 +72,20 @@ Object.defineProperty(exports, 'port', {
     if (!isNaN(value) && value > 0 && value < 65536) {
       port = Math.floor(value);
     }
+  }
+});
+
+/**
+ * Expose the router interface
+ *
+ * @type     {object}
+ */
+Object.defineProperty(exports, 'router', {
+  get: function() {
+    return router;
+  },
+  set: function(value) {
+    router = value;
   }
 });
 
@@ -224,7 +239,7 @@ function start(listento) {
     emitter.emit('request-received', message);
 
     // sleep if it's requested
-    if (message.request.cgi.latency) {
+    if (message.request && message.request.cgi && message.request.cgi.latency) {
       sleep(message.request.cgi.latency);
     }
 

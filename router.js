@@ -1,10 +1,11 @@
 /**
  * @author: hrobertking@cathmhoal.com
  *
- * @exports subscribe as on
+ * @exports root_dir as dir
  * @exports handle as pass
- * @exports routes as routes
  * @exports route as route
+ * @exports routes as routes
+ * @exports subscribe as on
  *
  * @see The <a href="https://github.com/hrobertking/node-experiments">node-experiments</a> repo for information about the writer module
  */
@@ -12,6 +13,7 @@
 var events = require('events')
   , writer = require('./writer')
   , emitter = new events.EventEmitter()     // event emitter
+  , root_dir = process.cwd()                // the root directory for the web server
   , routes = { }                            // routing table
   , uri                                     // the uri requested - http://nodejs.org/api/url.html
 ;
@@ -19,8 +21,43 @@ var events = require('events')
 /* v -------------------------- ROUTING HANDLERS -------------------------------- v */
 routes['/favicon.ico'] = ignored;
 
-
+// add application-specific code here --
+// Example
+// routes['/foo-bar'] = function(message) {
+//    var path = require('path')
+//      , querystring = require('querystring')
+//    ;
+//    // set the log filename when events should be logged
+//    err_log = path.join(__dirname, './logs/error.log');
+//
+//    // handle the request
+//    emitter.emit('response-sent', writer.writeNotFound(message));
+// };
 /* ^ -------------------------- ROUTING HANDLERS -------------------------------- ^ */
+
+/**
+ * The base directory used to serve the requests
+ *
+ * @type     {string}
+ */
+Object.defineProperty(exports, 'dir', {
+  get: function() {
+    return root_dir;
+  },
+  set: function(value) {
+    // if the directory exists, use it
+    var fs = require('fs');
+    if (typeof value === 'string') {
+      try { 
+        if (fs.statSync(value).isDirectory()) {
+          root_dir = value;
+        }
+      } catch (ignore) {
+        console.log(value + ' is not a valid directory');
+      }
+    }
+  }
+});
 
 /**
  * The routing table
@@ -59,7 +96,7 @@ function ignored(message) {
 function unhandled(message) {
   var fs = require('fs')
     , path = require('path')
-    , filename = path.join(process.cwd(), uri.pathname)                 // the filename represented by the uri
+    , filename = path.join(root_dir, uri.pathname)                 // the filename represented by the uri
   ;
 
   try {

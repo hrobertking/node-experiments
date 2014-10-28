@@ -459,7 +459,6 @@ exports.writeContentType = writeResponseHead;
  * @param    {string} fname
  */
 function writeToFileSystem(contents, fname) {
-  fname = path.join(process.cwd(), fname);
   fs.writeFile(fname, contents, function (err) {
     if (err) {
       console.warn(err);
