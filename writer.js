@@ -382,7 +382,7 @@ function writeResponseFile(message, data, type) {
       str += data.toString('binary');
 
       writeResponseHead(message.response, type, Buffer.byteLength(str));
-      message.response.write(str);
+      message.response.write(str, 'binary');
     }
 
     message.response.bytes = Buffer.byteLength(str);
@@ -405,7 +405,10 @@ function writeResponseHead(response, type, length) {
   if (response) {
     switch (type.toLowerCase()) {
       case 'avi':
-        response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'video/avi', 'Content-length': length});
+        response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'video/avi'});
+        break;
+      case 'bmp':
+        response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'image/bmp'});
         break;
       case 'css':
         response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'text/css', 'Content-length': length});
@@ -413,9 +416,19 @@ function writeResponseHead(response, type, length) {
       case 'csv':
         response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'text/csv', 'Content-length': length});
         break;
+      case 'gif':
+        response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'image/gif'});
+        break;
       case 'htm':  //fall through to html
       case 'html':
         response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'text/html', 'Content-length': length});
+        break;
+      case 'ico':
+        response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'image/x-icon'});
+        break;
+      case 'jpeg': //fall through to jpg
+      case 'jpg':
+        response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'image/jpeg'});
         break;
       case 'js':
         response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'application/js', 'Content-length': length});
@@ -424,26 +437,35 @@ function writeResponseHead(response, type, length) {
         response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'application/json', 'Content-length': length});
         break;
       case 'mp4':
-        response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'audio/mp4', 'Content-length': length});
+        response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'audio/mp4'});
         break;
       case 'mp3':  //fall through to mpeg
       case 'mpeg':
-        response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'audio/mpeg', 'Content-length': length});
+        response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'audio/mpeg'});
         break;
       case 'pdf':
-        response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'application/pdf', 'Content-length': length});
+        response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'application/pdf'});
+        break;
+      case 'png':
+        response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'image/png'});
         break;
       case 'rtf':
-        response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'text/rtf', 'Content-length': length});
+        response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'text/rtf'});
+        break;
+      case 'svg':
+        response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'image/svg+xml'});
+        break;
+      case 'tiff':
+        response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'image/tiff'});
         break;
       case 'txt':
         response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'text/plain', 'Content-length': length});
         break;
       case 'xml':
-        response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'application/xml', 'Content-length': length});
+        response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'application/xml'});
         break;
       default:
-        response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-length': length});  // let the user-agent try to figure out the type
+        response.writeHead(200, {'Access-Control-Allow-Origin':'*'});  // let the user-agent try to figure out the type
         break;
     }
   }
