@@ -103,7 +103,7 @@ function unhandled(message) {
     // check the path against the file system
     if (fs.existsSync(filename)) {
       if (fs.statSync(filename).isDirectory()) {
-        filename += '/index.htm';
+        filename += fs.existsSync(filename + '/index.htm') ? '/index.htm' : '/index.html';
         if (fs.existsSync(filename)) {
           emitter.emit('response-sent', writer.writeAsFile(message, fs.readFileSync(filename, 'binary'), path.extname(filename).replace(/^\./, '')));
         } else {
