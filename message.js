@@ -187,6 +187,8 @@ function Message(request, response) {
 
   // set the date-time the request is received
   request.date = new Date();
+  response.date = new Date();
+
   // set the encoding
   request.setEncoding('utf8');
   // get the Basic Authorization username if it's present
@@ -231,6 +233,7 @@ exports.create = Message;
  */
 function subscribe(eventname, handler) {
   if ((/request\-received|response\-sent/).test(eventname)) {
+    emitter.removeListener(eventname, handler);
     emitter.on(eventname, handler);
   }
 }
