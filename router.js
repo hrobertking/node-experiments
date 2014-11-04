@@ -18,7 +18,7 @@ var events = require('events')
   , uri                                     // the uri requested - http://nodejs.org/api/url.html
 ;
 
-/* v -------------------------- ROUTING HANDLERS -------------------------------- v */
+/* v ---------------------- ROUTING HANDLERS ---------------------------- v */
 routes['/favicon.ico'] = ignored;
 
 // add application-specific code here --
@@ -33,7 +33,7 @@ routes['/favicon.ico'] = ignored;
 //    // handle the request
 //    emitter.emit('response-sent', writer.writeNotFound(message));
 // };
-/* ^ -------------------------- ROUTING HANDLERS -------------------------------- ^ */
+/* ^ ---------------------- ROUTING HANDLERS ---------------------------- ^ */
 
 /**
  * The base directory used to serve the requests
@@ -96,21 +96,28 @@ function ignored(message) {
 function unhandled(message) {
   var fs = require('fs')
     , path = require('path')
-    , filename = path.join(root_dir, uri.pathname)                 // the filename represented by the uri
+    , filename = path.join(root_dir, uri.pathname)
   ;
 
   try {
     // check the path against the file system
     if (fs.existsSync(filename)) {
       if (fs.statSync(filename).isDirectory()) {
-        filename += fs.existsSync(filename + '/index.htm') ? '/index.htm' : '/index.html';
+        filename += '/index.htm';
+        filename += !fs.existsSync(filename) ? 'l' : '';
         if (fs.existsSync(filename)) {
-          emitter.emit('response-sent', writer.writeAsFile(message, fs.readFileSync(filename, 'binary'), path.extname(filename).replace(/^\./, '')));
+          emitter.emit('response-sent', writer.writeAsFile(message, 
+                   fs.readFileSync(filename, 'binary'), 
+                   path.extname(filename).replace(/^\./, ''))
+          );
         } else {
           emitter.emit('response-sent', writer.writeNotFound(message));
         }
       } else {
-        emitter.emit('response-sent', writer.writeAsFile(message, fs.readFileSync(filename, 'binary'), path.extname(filename).replace(/^\./, '')));
+        emitter.emit('response-sent', writer.writeAsFile(message,
+                   fs.readFileSync(filename, 'binary'), 
+                   path.extname(filename).replace(/^\./, ''))
+        );
       }
     } else {
       emitter.emit('response-sent', writer.writeNotFound(message));
@@ -127,7 +134,10 @@ function unhandled(message) {
  * @emits    request-received
  */
 function handle(message) {
-  emitter.emit('request-received', message);
+  // listen for the end event on the request to make sure we have complete data
+  message.on('request-received', function() {
+    emitter.emit('request-received', message);
+  });
 }
 exports.pass = handle;
 
@@ -155,7 +165,9 @@ function route(message) {
     handler(message);
   } else {
     // oops.
-    emitter.emit('error', writer.writeServerError(message, 'Unable to route request'));
+    emitter.emit('error', writer.writeServerError(message, 
+       'Unable to route request')
+    );
   }
 }
 exports.route = route;
