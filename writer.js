@@ -10,6 +10,7 @@
  * @exports writeResponseContents as writeContents
  * @exports writeResponseHead as writeContentType
  * @exports writeResponseEmpty as writeEmptyDocument
+ * @exports writeResponse403 as writeNotAuthorized
  * @exports writeResponse404 as writeNotFound
  * @exports writeResponseError as writeServerError
  * @exports writeToFileSystem as writeToFileSystem
@@ -70,11 +71,13 @@ function writeDataCsv(message, data) {
 
       // put the data in a consistent order
       for (key in keys) {
-        // There isn't really a good way to represent arrays or objects in a CSV,
-        // because the internal representation is going to be comma-separated too,
-        // making the header not correspond to the data items, so we're just
-        // going to dump out the primitive types.
-        if (keys[key] === 'boolean' || keys[key] === 'number' || keys[key] === 'string') {
+        // There isn't really a good way to represent arrays or objects in
+        // a CSV, because the internal representation is going to be 
+        // comma-separated too, making the header not correspond to the data 
+        // items, so we're just going to dump out the primitive types.
+        if (keys[key] === 'boolean' || 
+            keys[key] === 'number' || 
+            keys[key] === 'string') {
           head.push(key);
           for (i in data) {
             datum = data[i][key];
@@ -237,13 +240,18 @@ function writeDataXml(message, data, tagNameRoot, tagNameChild) {
               attr[key] = 'xs:boolean';
               break;
             case 'number':
-              attr[key] = Math.floor(item[key]) == item[key] ? 'xs:integer' : 'xs:decimal'; // use == because we must only check the value
+              // use == because we must only check the value
+              attr[key] = Math.floor(item[key]) == item[key] ? 
+                              'xs:integer' : 
+                              'xs:decimal';
               break;
             case 'string':
               attr[key] = 'xs:string';
               break;
             default:
-              attr[key] = item[key] instanceof Date ? 'xs:dateTime' : 'xs:string';
+              attr[key] = item[key] instanceof Date ? 
+                              'xs:dateTime' : 
+                              'xs:string';
               break;
           }
         }
@@ -260,7 +268,9 @@ function writeDataXml(message, data, tagNameRoot, tagNameChild) {
       schema += '\t\t\t<xs:element name="' + tagRootChild + '">\n';
       schema += '\t\t\t\t<xs:complexType>\n';
       for (key in attr) {
-        schema += '\t\t\t\t\t<xs:attribute name="' + key +'" type="' + attr[key] + '"/>\n';
+        schema += '\t\t\t\t\t<xs:attribute name="';
+        schema += key;
+        schema += '" type="' + attr[key] + '"/>\n';
       }
       schema += '\t\t\t\t</xs:complexType>\n';
       schema += '\t\t\t</xs:element>\n';
@@ -292,7 +302,9 @@ exports.writeAsXML = writeDataXml;
  * @param    {string} data
  */
 function writeResponseContents(message, data) {
-  var str = '';
+  var str = ''
+    , size
+  ;
 
   if (message.response) {
     if (data) {
@@ -300,12 +312,47 @@ function writeResponseContents(message, data) {
     }
     message.response.write(str);
 
-    message.response.bytes = (message.response.bytes || 0) + Buffer.byteLength(str);
+    size = (message.response.bytes || 0) + Buffer.byteLength(str);
+    message.response.bytes = size;
     message.response.date = new Date();
   }
   return message;
 }
 exports.writeContents = writeResponseContents;
+
+/**
+ * Writes a 403 response error and returns the message object
+ *
+ * @return   {server.Message}
+ *
+ * @param    {server.Message} message
+ */
+function writeResponse403(message) {
+  var str = ''
+  ;
+
+  if (message.response) {
+    str += '<!DOCTYPE html>';
+    str += '\t<head><title>403 - Not Authorized</title></head>\n';
+    str += '\t<body>\n';
+    str += '\t\t<h1>403 - Not Authorized</h1>\n';
+    str += '\t\t<p>\n';
+    str += '\t\t\t I am sorry, but the resource you requested is restricted\n';
+    str += '\t\t\t to authorized requests only.\n';
+    str += '\t\t</p>\n';
+    str += '\t</body>\n';
+    str += '</html>\n';
+
+    message.response.writeHead(403, {'Content-Type': 'text/html',
+      'Content-Length': Buffer.byteLength(str)});
+    message.response.write(str);
+
+    message.response.bytes = Buffer.byteLength(str);
+    message.response.date = new Date();
+  }
+  return message;
+}
+exports.writeNotAuthorized = writeResponse403;
 
 /**
  * Writes a 404 response error and returns the message object
@@ -316,21 +363,24 @@ exports.writeContents = writeResponseContents;
  */
 function writeResponse404(message) {
   var str = ''
-    , size        // size of content in bytes
   ;
 
   if (message.response) {
     str += '<!DOCTYPE html>';
     str += '\t<head><title>404 - Not Found</title></head>\n';
-    str += '\t<body><h1>404 - Not Found</h1><p>I am sorry, but the resource you requested does not exist in this dimension.</p></body>\n';
+    str += '\t<body>\n';
+    str += '\t\t<h1>404 - Not Found</h1>\n';
+    str += '\t\t<p>\n';
+    str += '\t\t\t I am sorry, the resource you requested does not exist.\n';
+    str += '\t\t</p>\n';
+    str += '\t</body>\n';
     str += '</html>\n';
 
-    size = Buffer.byteLength(str);
-
-    message.response.writeHead(404, {'Content-Type': 'text/html', 'Content-length': size});
+    message.response.writeHead(404, {'Content-Type': 'text/html',
+      'Content-Length': Buffer.byteLength(str)});
     message.response.write(str);
 
-    message.response.bytes = size;
+    message.response.bytes = Buffer.byteLength(str);
     message.response.date = new Date();
   }
   return message;
@@ -365,18 +415,16 @@ exports.writeEmptyDocument = writeResponseEmpty;
  */
 function writeResponseError(message, err) {
   var str = ''
-    , size        // size of content in bytes
   ;
 
   if (message.response) {
     str = (err || 'Ouch. A server error has occurred') + '\n';
 
-    size = Buffer.byteLength(str);
-
-    message.response.writeHead(500, {'Content-Type': 'text/plain', 'Content-length': size});
+    message.response.writeHead(500, {'Content-Type': 'text/plain',
+      'Content-Length': Buffer.byteLength(str)});
     message.response.write(str);
 
-    message.response.bytes = size;
+    message.response.bytes = Buffer.byteLength(str);
     message.response.date = new Date();
   }
   return message;

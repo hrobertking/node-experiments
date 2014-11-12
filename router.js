@@ -91,7 +91,7 @@ function ignored(message) {
  * @param    {server.Message} message
  *
  * @emits    response-sent
- * @emits    error
+ * @emits    route-error
  */
 function unhandled(message) {
   var fs = require('fs')
@@ -123,7 +123,7 @@ function unhandled(message) {
       emitter.emit('response-sent', writer.writeNotFound(message));
     }
   } catch (err) {
-    emitter.emit('error', writer.writeServerError(message, err));
+    emitter.emit('route-error', writer.writeServerError(message, err));
   }
 }
 
@@ -148,26 +148,31 @@ exports.pass = handle;
  *
  * @param    {server.Message} message
  *
- * @emits    error
+ * @emits    route-error
  */
 function route(message) {
   var url = require('url')
     , handler
   ;
 
-  // set the URI used by all the functions
-  uri = url.parse(message.request.url);
-
-  // get the handler for the requested resource
-  handler = routes[uri.pathname] || unhandled;
-
-  if (typeof handler === 'function') {
-    handler(message);
+  // check to see if the request is authorized
+  if (message.request.forbidden) {
+    emitter.emit('route-error', writer.writeNotAuthorized(message));
   } else {
-    // oops.
-    emitter.emit('error', writer.writeServerError(message, 
-       'Unable to route request')
-    );
+    // set the URI used by all the functions
+    uri = url.parse(message.request.url);
+
+    // get the handler for the requested resource
+    handler = routes[uri.pathname] || unhandled;
+
+    if (typeof handler === 'function') {
+      handler(message);
+    } else {
+      // oops.
+      emitter.emit('route-error', writer.writeServerError(message, 
+         'Unable to route request')
+      );
+    }
   }
 }
 exports.route = route;

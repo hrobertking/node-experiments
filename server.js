@@ -5,6 +5,7 @@
  *
  * @exports cert as cert
  * @exports host as host
+ * @exports ip_auth as ip
  * @exports log_file as log
  * @exports port as port
  * @exports router as router
@@ -21,6 +22,7 @@ var events = require('events')                        // nodejs core
   , router = require('./router')                      // application-specific router
   , emitter = new events.EventEmitter()               // event emitter
   , host                                              // the hostname or host address
+  , ip_auth = [ ]                                     // array of IPv4 clients authorized
   , log_file                                          // filename of the log
   , port                                              // port used by web-server to listen
   , ssl_options = { cert:null, key:null, pfx:null }   // ssl options object to contain 'key' and 'cert'
@@ -38,6 +40,45 @@ Object.defineProperty(exports, 'host', {
   set: function(value) {
     if (typeof value === 'string' && value !== '') {
       host = value;
+    }
+  }
+});
+
+/**
+ * The IP addresses authorized to access the server
+ *
+ * @type     {string}
+ */
+Object.defineProperty(exports, 'ip', {
+  get: function() {
+    return ip_auth.join(',');
+  },
+  set: function(value) {
+    function isValid(ip) {
+      var seg = ip.split('.')
+        , i
+        , ok = (seg.length > 0)
+      ;
+      for (i = 0; i < seg.length; i += 1) {
+        if (isNaN(seg[i])) {
+          ok = ok && seg[i] === '*';
+        } else {
+          ok = ok && (parseFloat(seg[i]) > -1 && parseFloat(seg[i]) < 256);
+        }
+      }
+      return ok;
+    }
+    var autho, c;
+    if (typeof value === 'string' && value !== '') {
+      autho = value.split(',');
+      for (c = 0; c < autho.length; c += 1) {
+        if (!isValid(autho[c])) {
+          autho.splice(c, 1);
+        }
+      }
+      if (autho.length) {
+        ip_auth = autho;
+      }
     }
   }
 });
@@ -88,6 +129,27 @@ Object.defineProperty(exports, 'router', {
     router = value;
   }
 });
+
+/**
+ * Checks the client IP against authorized clients
+ *
+ * @return   {boolean}
+ *
+ * @param    {request} req
+ */
+function authorizedClient(req) {
+  var ndx
+    , ok = (ip_auth.length === 0) // assume it isn't authorized
+    , ip
+    , regex
+  ;
+  for (ndx = 0; ndx < ip_auth.length; ndx += 1) {
+    ip = '^' + ip_auth[ndx].replace(/\./g, '\\.').replace(/\*/g, '\\d{1,3}');
+    regex = new RegExp(ip);
+    ok = ok || regex.test(req.connection.remoteAddress);
+  }
+  return ok;
+}
 
 /**
  * Sets the ssl options
@@ -173,7 +235,7 @@ exports.cert = cert;
  * @emits    log-error
  */
 function log(entry) {
-  entry = entry.toString();
+  entry = entry.toString() + '\n';
 
   if (log_file && log_file !== '') {
     fs.appendFile(log_file, entry, function(err) {
@@ -223,14 +285,9 @@ function start(listento) {
 
   // request handler
   function onRequest(request, response) {
-    var qs = require('querystring') // nodejs core
-      , url = require('url')        // nodejs core
-      , bytes_out = 0               // bytes written by writer
-      , bytes_in = 0                // bytes read from request
-      , posted = ''                 // data sent in the request
-      , auth
-    ;
-
+    if (!authorizedClient(request)) {
+      request.forbidden = true;
+    }
     router.pass(message.create(request, response));
   }
 
@@ -248,6 +305,15 @@ function start(listento) {
   });
   // set the handler to log responses sent
   router.on('response-sent', function(message) {
+    if (message.response) {
+      message.response.date = message.response.date || new Date();
+      message.response.end();
+    }
+    emitter.emit('response-sent', message);
+    log(message);
+  });
+  // set the handler to log routing errors
+  router.on('route-error', function(message) {
     if (message.response) {
       message.response.date = message.response.date || new Date();
       message.response.end();
