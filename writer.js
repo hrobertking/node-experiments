@@ -54,6 +54,7 @@ function writeDataCsv(message, data) {
     , head = []   // output array
     , lines = []  // output array
     , datum       // an individual data element
+    , size        // size of content in bytes
     , str = ''    // the content to write out
   ;
 
@@ -93,13 +94,16 @@ function writeDataCsv(message, data) {
         str += lines[i].join(',')+'\n';
       }
 
-      writeResponseHead(message.response, 'csv', str.length)
+      // set the size
+      size = Buffer.byteLength(str);
+
+      writeResponseHead(message.response, 'csv', size)
       message.response.write(str);
 
       writeToFileSystem(str, fname);
     }
 
-    message.response.bytes = Buffer.byteLength(str.toString());
+    message.response.bytes = size;
     message.response.date = new Date();
   }
   return message;
@@ -120,6 +124,7 @@ function writeDataHtml(message, data) {
     , line        // line out
     , item        // data item
     , key         // item key index
+    , size        // size of content in bytes
     , str = ''    // the content to write out
   ;
 
@@ -140,13 +145,15 @@ function writeDataHtml(message, data) {
       str += '</body>\n';
       str += '</html>\n';
 
-      writeResponseHead(message.response, 'html', str.length)
+      size = Buffer.byteLength(str);
+
+      writeResponseHead(message.response, 'html', size)
       message.response.write(str);
 
       writeToFileSystem(str, fname);
     }
 
-    message.response.bytes = Buffer.byteLength(str.toString());
+    message.response.bytes = size;
     message.response.date = new Date();
   }
   return message;
@@ -163,8 +170,9 @@ exports.writeAsHTML = writeDataHtml;
  */
 function writeDataJson(message, data) {
   var fname = filename.replace(/\.[\w]+$/, '.json')
-    , i          // array loop index
-    , str = [ ]  // the content to write out
+    , i           // array loop index
+    , size        // size of content in bytes
+    , str = [ ]   // the content to write out
   ;
 
   if (message.response) {
@@ -175,13 +183,15 @@ function writeDataJson(message, data) {
 
       str = '[\n' + str.join(',\n') + ']\n';
 
-      writeResponseHead(message.response, 'json', str.length)
+      size = Buffer.byteLength(str);
+
+      writeResponseHead(message.response, 'json', size)
       message.response.write(str);
 
       writeToFileSystem(str, fname);
     }
 
-    message.response.bytes = Buffer.byteLength(str.toString());
+    message.response.bytes = size;
     message.response.date = new Date();
   }
   return message;
@@ -206,6 +216,7 @@ function writeDataXml(message, data, tagNameRoot, tagNameChild) {
     , key         // item key index
     , line        // line out
     , schema = '' // xml-schema
+    , size        // size of content in bytes
     , str = ''    // the content to write out
   ;
 
@@ -258,13 +269,14 @@ function writeDataXml(message, data, tagNameRoot, tagNameChild) {
       schema += '</xs:element>\n';
       schema += '</xs:schema>\n';
 
-      writeResponseHead(message.response, 'xml', str.length)
+      size = Buffer.byteLength(str);
+      writeResponseHead(message.response, 'xml', size)
       message.response.write(str);
 
       writeToFileSystem(str, fname);
     }
 
-    message.response.bytes = Buffer.byteLength(str.toString());
+    message.response.bytes = size;
     message.response.date = new Date();
   }
   return message;
@@ -288,7 +300,7 @@ function writeResponseContents(message, data) {
     }
     message.response.write(str);
 
-    message.response.bytes = Buffer.byteLength(str);
+    message.response.bytes = (message.response.bytes || 0) + Buffer.byteLength(str);
     message.response.date = new Date();
   }
   return message;
@@ -303,7 +315,9 @@ exports.writeContents = writeResponseContents;
  * @param    {server.Message} message
  */
 function writeResponse404(message) {
-  var str = '';
+  var str = ''
+    , size        // size of content in bytes
+  ;
 
   if (message.response) {
     str += '<!DOCTYPE html>';
@@ -311,10 +325,12 @@ function writeResponse404(message) {
     str += '\t<body><h1>404 - Not Found</h1><p>I am sorry, but the resource you requested does not exist in this dimension.</p></body>\n';
     str += '</html>\n';
 
-    message.response.writeHead(404, {'Content-Type': 'text/html', 'Content-length': str.length});
+    size = Buffer.byteLength(str);
+
+    message.response.writeHead(404, {'Content-Type': 'text/html', 'Content-length': size});
     message.response.write(str);
 
-    message.response.bytes = Buffer.byteLength(str.toString());
+    message.response.bytes = size;
     message.response.date = new Date();
   }
   return message;
@@ -348,15 +364,19 @@ exports.writeEmptyDocument = writeResponseEmpty;
  * @param    {string} err
  */
 function writeResponseError(message, err) {
-  var str = '';
+  var str = ''
+    , size        // size of content in bytes
+  ;
 
   if (message.response) {
     str = (err || 'Ouch. A server error has occurred') + '\n';
 
-    message.response.writeHead(500, {'Content-Type': 'text/plain', 'Content-length': str.length});
+    size = Buffer.byteLength(str);
+
+    message.response.writeHead(500, {'Content-Type': 'text/plain', 'Content-length': size});
     message.response.write(str);
 
-    message.response.bytes = Buffer.byteLength(contents.toString());
+    message.response.bytes = size;
     message.response.date = new Date();
   }
   return message;
@@ -373,7 +393,9 @@ exports.writeServerError = writeResponseError;
  * @param    {string} type
  */
 function writeResponseFile(message, data, type) {
-  var str = '';
+  var str = ''
+    , size        // size of content in bytes
+  ;
 
   type = (type || '').toLowerCase();
 
@@ -381,11 +403,13 @@ function writeResponseFile(message, data, type) {
     if (data) {
       str += data.toString('binary');
 
-      writeResponseHead(message.response, type, Buffer.byteLength(str));
+      size = Buffer.byteLength(str);
+
+      writeResponseHead(message.response, type, size);
       message.response.write(str, 'binary');
     }
 
-    message.response.bytes = Buffer.byteLength(str);
+    message.response.bytes = size;
     message.response.date = new Date();
   }
   return message;
@@ -402,72 +426,80 @@ exports.writeAsFile = writeResponseFile;
  * @param    {number} length
  */
 function writeResponseHead(response, type, length) {
+  var headers = {
+        'Access-Control-Allow-Origin':'*'
+      }
+  ;
+  if (length) {
+    headers['Content-length'] = length;
+  }
+
   if (response) {
     switch (type.toLowerCase()) {
       case 'avi':
-        response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'video/avi'});
+        headers['Content-Type'] = 'video/avi';
         break;
       case 'bmp':
-        response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'image/bmp'});
+        headers['Content-Type'] = 'image/bmp';
         break;
       case 'css':
-        response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'text/css', 'Content-length': length});
+        headers['Content-Type'] = 'text/css';
         break;
       case 'csv':
-        response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'text/csv', 'Content-length': length});
+        headers['Content-Type'] = 'text/csv';
         break;
       case 'gif':
-        response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'image/gif'});
+        headers['Content-Type'] = 'image/gif';
         break;
       case 'htm':  //fall through to html
       case 'html':
-        response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'text/html', 'Content-length': length});
+        headers['Content-Type'] = 'text/html';
         break;
       case 'ico':
-        response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'image/x-icon'});
+        headers['Content-Type'] = 'image/x-icon';
         break;
       case 'jpeg': //fall through to jpg
       case 'jpg':
-        response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'image/jpeg'});
+        headers['Content-Type'] = 'image/jpeg';
         break;
       case 'js':
-        response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'application/js', 'Content-length': length});
+        headers['Content-Type'] = 'application/javascript';
         break;
       case 'json':
-        response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'application/json', 'Content-length': length});
+        headers['Content-Type'] = 'application/json';
         break;
       case 'mp4':
-        response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'audio/mp4'});
+        headers['Content-Type'] = 'audio/mp4';
         break;
       case 'mp3':  //fall through to mpeg
       case 'mpeg':
-        response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'audio/mpeg'});
+        headers['Content-Type'] = 'audio/mpeg';
         break;
       case 'pdf':
-        response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'application/pdf'});
+        headers['Content-Type'] = 'application/pdf';
         break;
       case 'png':
-        response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'image/png'});
+        headers['Content-Type'] = 'image/png';
         break;
       case 'rtf':
-        response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'text/rtf'});
+        headers['Content-Type'] = 'text/rtf';
         break;
       case 'svg':
-        response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'image/svg+xml'});
+        headers['Content-Type'] = 'image/svg+xml';
         break;
       case 'tiff':
-        response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'image/tiff'});
+        headers['Content-Type'] = 'image/tiff';
         break;
       case 'txt':
-        response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'text/plain', 'Content-length': length});
+        headers['Content-Type'] = 'text/plain';
         break;
       case 'xml':
-        response.writeHead(200, {'Access-Control-Allow-Origin':'*', 'Content-Type': 'application/xml'});
+        headers['Content-Type'] = 'application/xml';
         break;
       default:
-        response.writeHead(200, {'Access-Control-Allow-Origin':'*'});  // let the user-agent try to figure out the type
         break;
     }
+    response.writeHead(200, headers);
   }
 }
 exports.writeContentType = writeResponseHead;
