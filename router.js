@@ -2,12 +2,12 @@
  * @author: hrobertking@cathmhoal.com
  *
  * @exports root_dir as dir
- * @exports handle as pass
  * @exports route as route
  * @exports routes as routes
  * @exports subscribe as on
  *
  * @see The <a href="https://github.com/hrobertking/node-experiments">node-experiments</a> repo for information about the writer module
+ * @see The <a href="https://github.com/hrobertking/node-experiments">node-experiments</a> repo for information about the message module
  */
 
 var events = require('events')
@@ -22,7 +22,7 @@ var events = require('events')
 routes['/favicon.ico'] = ignored;
 
 // add application-specific code here --
-// Example
+// Examples:
 // routes['/foo-bar'] = function(message) {
 //    var path = require('path')
 //      , querystring = require('querystring')
@@ -32,6 +32,19 @@ routes['/favicon.ico'] = ignored;
 //
 //    // handle the request
 //    emitter.emit('response-sent', writer.writeNotFound(message));
+// };
+// routes['/ReST/user'] = function(message) {
+//    var sql = require('node-sqlserver')
+//      , connection_string = ''
+//      , query = 'select * from users where id = ' + message.request.cgi.id
+//    ;
+//    sql.query(connection_string, query, function (err, results) {
+//      if (err) {
+//        emitter.emit('response-sent', writer.writeServerError(message, err));
+//        return;
+//      }
+//      emitter.emit('response-sent', writer.writeDataJson(message, results));
+//    });
 // };
 /* ^ ---------------------- ROUTING HANDLERS ---------------------------- ^ */
 
@@ -84,6 +97,23 @@ function ignored(message) {
 }
 
 /**
+ * Waits for a specified period of time, in milliseconds, to elapse
+ *
+ * @return   {void}
+ *
+ * @param    {integer} ms
+ */
+function sleep(ms) {
+  var end = (new Date()).getTime() + (isNaN(ms) ? 0 : Math.floor(ms))
+    , tick = 0
+  ;
+  while ((new Date()).getTime() < end) {
+    tick += 1;
+  }
+  return;
+}
+
+/**
  * Handles requests not otherwise routed
  *
  * @return   {message}
@@ -99,47 +129,37 @@ function unhandled(message) {
     , filename = path.join(root_dir, uri.pathname)
   ;
 
-  try {
-    // check the path against the file system
-    if (fs.existsSync(filename)) {
-      if (fs.statSync(filename).isDirectory()) {
-        filename += '/index.htm';
-        filename += !fs.existsSync(filename) ? 'l' : '';
-        if (fs.existsSync(filename)) {
-          emitter.emit('response-sent', writer.writeAsFile(message, 
-                   fs.readFileSync(filename, 'binary'), 
-                   path.extname(filename).replace(/^\./, ''))
-          );
-        } else {
-          emitter.emit('response-sent', writer.writeNotFound(message));
-        }
-      } else {
+  /**
+   * Serves the file
+   */
+  function serveFile() {
+    var contents = '';
+    try {
+      contents = fs.readFileSync(filename, 'binary');
+      if (Buffer.byteLength(contents, 'binary') > 0) {
         emitter.emit('response-sent', writer.writeAsFile(message,
-                   fs.readFileSync(filename, 'binary'), 
-                   path.extname(filename).replace(/^\./, ''))
+                 contents,
+                 path.extname(filename).replace(/^\./, ''))
         );
+      } else {
+        emitter.emit('response-sent', writer.writeNotFound(message));
       }
-    } else {
+    } catch(err) {
       emitter.emit('response-sent', writer.writeNotFound(message));
     }
+  }
+
+  try {
+    // check the path against the file system
+    if (fs.existsSync(filename) && fs.statSync(filename).isDirectory()) {
+      filename += '/index.htm';
+      filename += !fs.existsSync(filename) ? 'l' : '';
+    }
+    serveFile();
   } catch (err) {
     emitter.emit('route-error', writer.writeServerError(message, err));
   }
 }
-
-/**
- * Starts the handling
- * @return   {void}
- * @param    {server.Message} message
- * @emits    request-received
- */
-function handle(message) {
-  // listen for the end event on the request to make sure we have complete data
-  message.on('request-received', function() {
-    emitter.emit('request-received', message);
-  });
-}
-exports.pass = handle;
 
 /**
  * Routes a request to a response
@@ -154,6 +174,11 @@ function route(message) {
   var url = require('url')
     , handler
   ;
+
+  // sleep if it's requested
+  if (message.request && message.request.cgi && message.request.cgi.latency) {
+    sleep(message.request.cgi.latency);
+  }
 
   // check to see if the request is authorized
   if (message.request.forbidden) {
@@ -178,7 +203,7 @@ function route(message) {
 exports.route = route;
 
 /**
- * Registers event handlers for request-received and response-sent events
+ * Registers event handlers for request-received, response-sent, and route-error events
  *
  * @return   {void}
  *
@@ -186,7 +211,8 @@ exports.route = route;
  * @param    {function} handler
  */
 function subscribe(eventname, handler) {
-  if ((/request\-received|response\-sent/).test(eventname)) {
+  if ((/request\-received|response\-sent|route\-error/).test(eventname)) {
+    emitter.removeListener(name, handler);
     emitter.on(eventname, handler);
   }
 }

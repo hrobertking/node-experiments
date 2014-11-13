@@ -101,7 +101,7 @@ function writeDataCsv(message, data) {
       size = Buffer.byteLength(str);
 
       writeResponseHead(message.response, 'csv', size)
-      message.response.write(str);
+      message.response.end(str);
 
       writeToFileSystem(str, fname);
     }
@@ -151,7 +151,7 @@ function writeDataHtml(message, data) {
       size = Buffer.byteLength(str);
 
       writeResponseHead(message.response, 'html', size)
-      message.response.write(str);
+      message.response.end(str);
 
       writeToFileSystem(str, fname);
     }
@@ -189,7 +189,7 @@ function writeDataJson(message, data) {
       size = Buffer.byteLength(str);
 
       writeResponseHead(message.response, 'json', size)
-      message.response.write(str);
+      message.response.end(str);
 
       writeToFileSystem(str, fname);
     }
@@ -281,7 +281,7 @@ function writeDataXml(message, data, tagNameRoot, tagNameChild) {
 
       size = Buffer.byteLength(str);
       writeResponseHead(message.response, 'xml', size)
-      message.response.write(str);
+      message.response.end(str);
 
       writeToFileSystem(str, fname);
     }
@@ -310,7 +310,7 @@ function writeResponseContents(message, data) {
     if (data) {
       str += data.toString('utf8');
     }
-    message.response.write(str);
+    message.response.end(str);
 
     size = (message.response.bytes || 0) + Buffer.byteLength(str);
     message.response.bytes = size;
@@ -345,7 +345,7 @@ function writeResponse403(message) {
 
     message.response.writeHead(403, {'Content-Type': 'text/html',
       'Content-Length': Buffer.byteLength(str)});
-    message.response.write(str);
+    message.response.end(str);
 
     message.response.bytes = Buffer.byteLength(str);
     message.response.date = new Date();
@@ -378,7 +378,7 @@ function writeResponse404(message) {
 
     message.response.writeHead(404, {'Content-Type': 'text/html',
       'Content-Length': Buffer.byteLength(str)});
-    message.response.write(str);
+    message.response.end(str);
 
     message.response.bytes = Buffer.byteLength(str);
     message.response.date = new Date();
@@ -422,7 +422,7 @@ function writeResponseError(message, err) {
 
     message.response.writeHead(500, {'Content-Type': 'text/plain',
       'Content-Length': Buffer.byteLength(str)});
-    message.response.write(str);
+    message.response.end(str);
 
     message.response.bytes = Buffer.byteLength(str);
     message.response.date = new Date();
@@ -451,10 +451,10 @@ function writeResponseFile(message, data, type) {
     if (data) {
       str += data.toString('binary');
 
-      size = Buffer.byteLength(str);
+      size = Buffer.byteLength(str, 'binary');
 
       writeResponseHead(message.response, type, size);
-      message.response.write(str, 'binary');
+      message.response.end(str, 'binary');
     }
 
     message.response.bytes = size;
@@ -478,8 +478,9 @@ function writeResponseHead(response, type, length) {
         'Access-Control-Allow-Origin':'*'
       }
   ;
+
   if (length) {
-    headers['Content-length'] = length;
+    headers['Content-Length'] = length;
   }
 
   if (response) {
@@ -540,6 +541,9 @@ function writeResponseHead(response, type, length) {
         break;
       case 'txt':
         headers['Content-Type'] = 'text/plain';
+        break;
+      case 'woff':
+        headers['Content-Type'] = 'application/font-woff';
         break;
       case 'xml':
         headers['Content-Type'] = 'application/xml';

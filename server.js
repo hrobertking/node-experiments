@@ -19,7 +19,7 @@ var events = require('events')                        // nodejs core
   , fs = require('fs')                                // nodejs core
   , http = require('http')                            // nodejs core
   , message = require('./message')                    // message module
-  , router = require('./router')                      // application-specific router
+  , router = require('./router')                      // router module
   , emitter = new events.EventEmitter()               // event emitter
   , host                                              // the hostname or host address
   , ip_auth = [ ]                                     // array of IPv4 clients authorized
@@ -167,8 +167,7 @@ function cert(key, certificate) {
         key:null,
         pfx:null
       }
-    ;
-
+  ;
 
   // check the 'key' to see if it's likely that it's base64 encoded
   if (base64.test(key)) {
@@ -249,23 +248,6 @@ function log(entry) {
 }
 
 /**
- * Waits for a specified period of time, in milliseconds, to elapse
- *
- * @return   {void}
- *
- * @param    {integer} ms
- */
-function sleep(ms) {
-  var end = (new Date()).getTime() + (isNaN(ms) ? 0 : Math.floor(ms))
-    , tick = 0
-  ;
-  while ((new Date()).getTime() < end) {
-    tick += 1;
-  }
-  return;
-}
-
-/**
  * Starts the server
  *
  * @return   {void}
@@ -285,48 +267,17 @@ function start(listento) {
 
   // request handler
   function onRequest(request, response) {
+    var msg
+    ;
+
     if (!authorizedClient(request)) {
       request.forbidden = true;
     }
-    router.pass(message.create(request, response));
+
+    msg = message.create(request, response);
+    msg.on('request-received', router.route);
+    msg.on('response-sent', log);
   }
-
-  // route the request
-  router.on('request-received', function(message) {
-    emitter.emit('request-received', message);
-
-    // sleep if it's requested
-    if (message.request && message.request.cgi && message.request.cgi.latency) {
-      sleep(message.request.cgi.latency);
-    }
-
-    // route the message
-    router.route(message);
-  });
-  // set the handler to log responses sent
-  router.on('response-sent', function(message) {
-    if (message.response) {
-      message.response.date = message.response.date || new Date();
-      message.response.end();
-    }
-    emitter.emit('response-sent', message);
-    log(message);
-  });
-  // set the handler to log routing errors
-  router.on('route-error', function(message) {
-    if (message.response) {
-      message.response.date = message.response.date || new Date();
-      message.response.end();
-    }
-    emitter.emit('response-sent', message);
-    log(message);
-  });
-
-  // handle log errors
-  emitter.on('log-error', function(params) {
-    console.log('Error: ' + params.error);
-    console.log(params.entry);
-  });
 
   // create the server to listen on the specified host and port
   if ((ssl_options.key && ssl_options.cert) || ssl_options.pfx) {
@@ -335,6 +286,12 @@ function start(listento) {
   } else {
     http.createServer(onRequest).listen(port, host);
   }
+
+  // handle log errors
+  emitter.on('log-error', function(params) {
+    console.log('Error: ' + params.error);
+    console.log(params.entry);
+  });
 }
 exports.start = start;
 
@@ -348,6 +305,7 @@ exports.start = start;
  */
 function subscribe(eventname, handler) {
   if ((/request\-received|response\-sent|log\-error/).test(eventname)) {
+    emitter.removeListener(eventname, handler);
     emitter.on(eventname, handler);
   }
 }
