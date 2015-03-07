@@ -34,6 +34,7 @@ function parse(args) {
         values = (opts[parm[1]] || '').split(',');                               // get the current value for the arg
         values.push(args[1]);                                                    // add this value to it
         opts[parm[1]] = values.join(',').replace(/^\,/, '').replace(/\,$/, '');  // store the values in the property of the object
+        opts[parm[1]] = opts[parm[1]] || true;                                   // assume if the value is blank, this is a flag and set it to true
         args.splice(0, 2);                                                       // delete both processed args from the array
       } else {
         // there isn't data passed in
