@@ -32,8 +32,12 @@ if (opts.h || opts.help) {
   //show help  
 }  
 
-#### Methods
+##### Methods
 - *object* parse: Returns an object with named parameters and a copy of all parameters in argv.
+
+##### Properties
+
+##### Events
 
 ### curl
 A handy little module that will run curl in much the same way the http.request works. There are some
@@ -45,7 +49,7 @@ Example:
 var curl = require('./curl'),  
  req = curl.request({ 'host':'js.cathmhaol.com', 'protocol':'http' }, responseHandler);
 
-#### Methods
+##### Methods
 - *void* abort: Aborts the request
 - *void* end: Ends the request
 - *void* on(*string* eventname, *function* callback): Listens for the event and executes the callback when the event fires
@@ -54,7 +58,9 @@ var curl = require('./curl'),
 - *void* setTimeout(*integer* ms[, *function* callback): Sets the amount of time before timing out and optionally the callback to execute when the timeout event fires.
 - *void* write(*string* data[, *string* encoding): Writes data to the connection to be posted, with optional encoding (binary is currently the only supported encoding).
 
-#### Events
+##### Properties
+
+##### Events
 - error: Fired when the curl process returns an error
 - response: Fired when the response is received
 - timeout: Fired when a timeout event occurs. If timeout has not been set or is set to 0, a timeout never occurs.
@@ -66,11 +72,13 @@ Example:
 var message = require('./message')
  msg = message.create(request, response);  
 
-#### Methods
+##### Methods
 - *object* create: Creates a message object using the provided request and response objects
 - *void* on(*string* eventname, *function* callback): Listens for the event and executes the callback when the event fires
 
-#### Events
+##### Properties
+
+##### Events
 - request-received: Fired when the request is received
 - response-sent: Fired when the response is sent
 
@@ -81,14 +89,14 @@ Example:
 var router = require('./router');
 router.route(request, response);
 
-#### Methods
+##### Methods
 - *void* on(*string* eventname, *function* handler): Subscribes to the 'error' or 'response-sent' event
 - *void* route(*server.Message* message): Routes a request
 
-#### Properties
+##### Properties
 - *hash* routes: A hash of routes and their defined handlers
 
-#### Events
+##### Events
 - request-received: Fired when the request is received
 - response-sent: Fired when the response is sent
 
@@ -101,6 +109,12 @@ scale.domain = [1, 10];
 scale.range = [1, 100];  
 var mapped = scale.scale(5);  // returns 50
 
+##### Methods
+
+##### Properties
+
+##### Events
+
 ### server
 The primary module that generates a web server. It requires the *router* module and the *writer* module in this repo.
 
@@ -109,17 +123,33 @@ var server = require('./server');
 server.port = 8080;  
 server.start();
 
-#### Methods
+##### Methods
 - *void* on(*string* eventname, *function* handler): Subscribes to the 'request-received' or 'response-sent' event
 - *void* start(*integer* listento): Starts the web server on the port specified
 
-#### Properties
+##### Properties
 - *string* log: The filename to use for logging (uses NCSA Common Log Format - http://en.wikipedia.org/wiki/Common_Log_Format)
 - *integer* port: The port to listen on.
 
-#### Events
+##### Events
 - request-received: Fired when the request is received
 - response-sent: Fired when the response is sent
+
+### sync
+A handy little module that will run synchronously.
+
+*string* sync.cmd(*string* command);
+
+Example:  
+var sync = require('./sync');
+files = sync.cmd('ls -l').split(/\n/);
+
+##### Methods
+- *string* cmd(*string* command): Executes a command an waits for the process to complete before returning a string containing the results
+
+##### Properties
+
+##### Events
 
 ### writer
 A collection of methods used to write to the response stream on the web server.
@@ -128,7 +158,7 @@ Example:
 var writer = require('./writer');  
 writer.writeAsJSON(res, [ {'name':'foo', 'value':'1'}, {'name':'bar', 'value':'2'} ]);
 
-#### Methods
+##### Methods
 - *server.Message* writeAsCSV(*server.Message* message, *object[]* data): Writes the data collection out as comma-separated values with a data element name header row.
 - *server.Message* writeAsFile(*server.Message* message, *stream* file): Writes the file to the message.
 - *server.Message* writeAsHTML(*server.Message* message, *object[]* data): Writes the data collection out as an HTML response using an unordered list
@@ -143,6 +173,10 @@ writer.writeAsJSON(res, [ {'name':'foo', 'value':'1'}, {'name':'bar', 'value':'2
 - *server.Message* writeNotFound(*server.Message* message): Writes a generic 404 page.
 - *server.Message* writeServerError(*server.Message* message, *string* err): Writes the specified error to an text/html response using 500 as the status code.
 - *void* writeToFileSystem(*string* contents, *string* filename): Writes the contents to the specified filename
+
+##### Properties
+
+##### Events
 
 ## Licensing
 
