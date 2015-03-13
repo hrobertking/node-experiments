@@ -2,37 +2,39 @@
  * @author: hrobertking@cathmhaol.com
  *
  * @exports cmdSync as cmd
- *
  */
  
 /**
- * Runs a child process synchronously and returns the output from the command as a string
+ * Runs a process synchronously, returning the output from the command
  * @return   {string}
- * @param    {string} command
+ * @param    {string} cmd
  */
-function cmdSync(command) {
+function __cmdSync(cmd) {
   var child_process = require('child_process')
     , fs = require('fs')
     , dt = (new Date()).getTime()
     , output
-    , spawned = 'childprc.' + dt
+    , prc = 'childprc.' + dt
   ;
 
-  // execute the command and redirect output to controlled names
-  child_process.exec(command + ' &>' + spawned + '.out && echo done! > ' + spawned + '.done');
+  // execute the command and redirect output to controlled names, using the ';'
+  // because I don't care about the status of the exited process, just that it
+  // is done
+  child_process.exec(cmd+' &>'+prc+'.out ; echo done! >'+prc+'.done');
 
   // loop to check the file system for the 'done' indicator
-  while (!fs.existsSync(spawned + '.done')) {
-    // wait for the file till it's there
+  while (!fs.existsSync(prc + '.done')) {
+    // wait for the file till it is there, indicating the spawned process
+    // has completed
   }
 
   // once the 'done' indicator appears, get the output of the command
-  output = fs.readFileSync(spawned + '.out');
+  output = fs.readFileSync(prc+'.out');
 
   // delete the 'done' indicator and the output
-  fs.unlinkSync(spawned + '.out');
-  fs.unlinkSync(spawned + '.done');
+  fs.unlinkSync(prc+'.out');
+  fs.unlinkSync(prc+'.done');
 
   return output;
 }
-exports.cmd = cmdSync;
+exports.cmd = __cmdSync;
