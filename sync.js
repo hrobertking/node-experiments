@@ -20,7 +20,7 @@ function __cmdSync(cmd) {
   // execute the command and redirect output to controlled names, using the ';'
   // because I don't care about the status of the exited process, just that it
   // is done
-  child_process.exec(cmd+' &>'+prc+'.out ; echo done! >'+prc+'.done');
+  child_process.exec(cmd+' 2>&1 1>'+prc+'.out ; echo done! >'+prc+'.done');
 
   // loop to check the file system for the 'done' indicator
   while (!fs.existsSync(prc + '.done')) {
