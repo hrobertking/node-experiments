@@ -23,7 +23,11 @@ if you believe, based on what you've seen here, I may have something in the work
 of the experiments.
 
 ### cli-opts
-A handy little utility to parse command-line options
+A handy little utility to parse command-line options. Command-line arguments can be passed as *argument* *value*,
+*argument*=*value*, or *argument*:*value*, e.g., --foo bar, --foo=bar, and --foo:bar are all equivalent. Shorthand
+arguments, i.e., single-letter arguments preceded by a single dash, can be combined - e.g., -hv. Any assignment of 
+value in a shorthand argument, e.g., -hv:off, is applied only to the **last** argument, e.g., -hv:off -&gt; *args.h* = true
+and *args.v* = "off".
 
 Example:  
 var cli = require('./cli-opts'),  
@@ -32,10 +36,17 @@ if (opts.h || opts.help) {
   //show help  
 }  
 
+var cli = require('./cli-opts'),  
+ opts = cli.args;  
+if (opts.h || opts.help) {  
+  //show help  
+}  
+
 ##### Methods
 - *object* parse: Returns an object with named parameters and a copy of all parameters in argv.
 
 ##### Properties
+- *hash* args: A hash of arguments and their values
 
 ##### Events
 

@@ -2,7 +2,23 @@
  * author: hrobertking@cathmhoal.com
  *
  * @exports parse as parse
+ * @exports __args as args
  */
+var __args;
+
+/**
+ * The named arguments passed in
+ *
+ * @type     {object}
+ */
+Object.defineProperty(exports, 'args', {
+  get: function() {
+    return __args;
+  },
+  set: function(value) {
+    // READ-ONLY
+  }
+});
 
 /**
  * Parses the array of arguments passed and returns an object
@@ -32,7 +48,17 @@ function parse(args) {
     arg_l = /^\-{2}(\S+)/.exec(args[0]);  // long arg format
     arg_s = /^\-{1}(\S+)/.exec(args[0]);  // short arg format
     if (arg_l) {
-      if (!(/^\-{2}(\S+)/).test(args[1]) && !(/^\-{1}(\S+)/).test(args[1])) {
+      if (arg_l[1].indexOf(':') > -1) {
+        // we have data in the argument, e.g., --foo:bar
+        obj[arg_l[1].split(':')[0]] = arg_l[1].split(':')[1];
+        obj.argv.push(args[0]);
+        args.splice(0, 1);
+      } else if (arg_l[1].indexOf('=') > -1) {
+        // we have data in the argument, e.g., --foo=bar
+        obj[arg_l[1].split('=')[0]] = arg_l[1].split('=')[1];
+        obj.argv.push(args[0]);
+        args.splice(0, 1);
+      } else if (!(/^\-{2}(\S+)/).test(args[1]) && !(/^\-{1}(\S+)/).test(args[1])) {
         // there is data passed in, so get the current value for the arg and
         // add this value to it, then store the values in the property of the
         // object, but assume it's a flag if the value is empty
@@ -52,10 +78,28 @@ function parse(args) {
       }
     } else if (arg_s) {
       // split the 'small' arg name into letters
+      arg_l = arg_s[1]; // keep the whole argument
       arg_s = arg_s[1].split('');
-      // if the arg is more than one letter, then loop through the letters
-      // and set each to true
-      if (arg_s.length > 1) {
+
+      if (arg_l.indexOf(':') > -1) {
+        // we have data in the argument, e.g., -f:bar
+        arg_s = arg_l.split(':')[0].split('');
+        for (value = 0; value < arg_s.length; value += 1) {
+          obj[arg_s[value]] = (value === arg_s.length - 1) ? arg_l.split(':')[1] : true;
+        }
+        obj.argv.push(args[0]);
+        args.splice(0, 1);
+      } else if (arg_l.indexOf('=') > -1) {
+        // we have data in the argument, e.g., --foo=bar
+        arg_s = arg_l.split('=')[0].split('');
+        for (value = 0; value < arg_s.length; value += 1) {
+          obj[arg_s[value]] = (value === arg_s.length - 1) ? arg_l.split('=')[1] : true;
+        }
+        obj.argv.push(args[0]);
+        args.splice(0, 1);
+      } else if (arg_s.length > 1) {
+        // if the arg is more than one letter, then loop through the letters
+        // and set each to the presented value or true
         for (value = 0; value < arg_s.length; value += 1) {
           obj[arg_s[value]] = true;
         }
@@ -94,3 +138,5 @@ function parse(args) {
   return obj;
 }
 exports.parse = parse;
+
+__args = parse(process.argv);
