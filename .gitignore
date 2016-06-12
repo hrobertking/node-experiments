@@ -37,3 +37,6 @@ Icon
 
 # Backup files
 *.bak
+
+# log files
+logs/
