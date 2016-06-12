@@ -10,13 +10,11 @@
  */
 
 var path = require('path')
+  , invoked = process.argv[1].split(path.sep).pop()
   , opts = require('./cli-opts')
   , server = require('./server')
-  , cli_args
-  , invoked = process.argv[0] + ' ' + process.argv[1]
+  , cli_args = opts.args;
 ;
-
-cli_args = opts.parse(process.argv);
 
 server.log = path.join(__dirname, 'logs/' + (cli_args.log || 'server.log'));
 server.port = cli_args.p || cli_args.port || 8000;
@@ -24,7 +22,7 @@ server.router.dir = cli_args.d || cli_args.dir || cli_args.directory;
 
 // Usage information
 function usage() {
-  console.log('Syntax: ' + invoked.split('/').pop() + ' <PARAMETERS>');
+  console.log('Syntax: ' + invoked.split(path.sep).pop() + ' <PARAMETERS>');
   console.log('');
   console.log('-[-]d[ir[ectory]] <PATH>   Sets the directory from where pages are served. Default is ' + process.cwd());
   console.log('-[-]h[elp]                 Show this usage message');
