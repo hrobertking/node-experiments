@@ -233,8 +233,10 @@ exports.cert = cert;
  *
  * @emits    log-error
  */
-function log(entry) {
-  entry = entry.toString() + '\n';
+function writeLog(entry) {
+  var EOL = require('os').EOL;
+
+  entry = entry.toString() + EOL;
 
   if (log_file && log_file !== '') {
     fs.appendFile(log_file, entry, function(err) {
@@ -276,7 +278,7 @@ function start(listento) {
 
     msg = message.create(request, response);
     msg.on('request-received', router.route);
-    msg.on('response-sent', log);
+    msg.on('response-sent', writeLog);
   }
 
   // create the server to listen on the specified host and port
