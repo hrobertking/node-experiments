@@ -267,6 +267,22 @@ function start(listento) {
     }
   }
 
+  // set the host if it isn't already and we can figure it out
+  if (!host) {
+    var os = require('os')
+      , cards = os.networkInterfaces()
+      , index
+    ;
+    cards = cards['Local Area Connection'];
+    index = cards.length - 1;
+    while (index > -1 && !host) {
+      if (cards[index].family === 'IPv4' && cards[index].internal === false) {
+        host = cards[index].address;
+      }
+      index -= 1;
+    }
+  }
+
   // request handler
   function onRequest(request, response) {
     var msg
