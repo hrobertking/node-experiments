@@ -23,6 +23,7 @@ var events = require('events')                        // nodejs core
   , router = require('./router')                      // router module
   , emitter = new events.EventEmitter()               // event emitter
   , host                                              // the hostname or host address
+  , io                                                // socket.io interface
   , ip_auth = [ ]                                     // array of IPv4 clients authorized
   , log_file                                          // filename of the log
   , log_status = true                                 // write log entry if true
@@ -312,8 +313,31 @@ function start(listento) {
     }
 
     msg = message.create(request, response);
-    msg.on('request-received', router.route);
-    msg.on('response-sent', writeLog);
+
+    msg.on('request-received', function(message) {
+        var io_obj = message.log;
+
+        // route the message
+        router.route(message);
+
+        // notify socket subscribers a request was received
+        io_obj['id'] = message.id;
+        io_obj['event-type'] = 'request';
+        io.emit('communication-event', io_obj);
+      });
+
+    msg.on('response-sent', function(message) {
+        var io_obj = message.log;
+
+        // write the log entry
+        writeLog(message);
+
+        io_obj['id'] = message.id;
+        io_obj['event-type'] = 'response';
+
+        // notify socket subscribers the response was sent
+        io.emit('communication-event', io_obj);
+      });
   }
 
   // create the server to listen on the specified host and port
@@ -329,6 +353,24 @@ function start(listento) {
     console.log('Error: ' + params.error);
     console.log(params.entry);
   });
+
+  // set up RUM
+  io = require('socket.io')(server);
+  // Set socket.io listeners.
+  io.on('connection', function(socket) {
+      console.log('a user connected');
+      socket.on('disconnect', function() {
+        console.log('user disconnected');
+      });
+    });
+  // set up RUM event bubbling
+  router.on('route-error', function(message) {
+      io.emit('error-event', {
+          'id':message.id,
+          'uri':message.request.url,
+          'error':message.response.statusCode
+        });
+    });
 }
 exports.start = start;
 
