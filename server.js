@@ -7,6 +7,7 @@
  * @exports host as host
  * @exports ip_auth as ip
  * @exports log_file as log
+ * @exports log_status as logging
  * @exports port as port
  * @exports router as router
  * @exports start as start
@@ -24,7 +25,9 @@ var events = require('events')                        // nodejs core
   , host                                              // the hostname or host address
   , ip_auth = [ ]                                     // array of IPv4 clients authorized
   , log_file                                          // filename of the log
+  , log_status = true                                 // write log entry if true
   , port                                              // port used by web-server to listen
+  , server                                            // http(s) server
   , ssl_options = { cert:null, key:null, pfx:null }   // ssl options object to contain 'key' and 'cert'
 ;
 
@@ -96,6 +99,20 @@ Object.defineProperty(exports, 'log', {
     if (typeof value === 'string' && value !== '') {
       log_file = value;
     }
+  }
+});
+
+/**
+ * The status of the log - on or off
+ *
+ * @type     {boolean}
+ */
+Object.defineProperty(exports, 'logging', {
+  get: function() {
+    return log_status;
+  },
+  set: function(value) {
+    log_status = (log_status ? true : false);
   }
 });
 
@@ -238,14 +255,16 @@ function writeLog(entry) {
 
   entry = entry.toString() + EOL;
 
-  if (log_file && log_file !== '') {
-    fs.appendFile(log_file, entry, function(err) {
-      if (err) {
-        emitter.emit('log-error', {error: err, entry:entry});
-      }
-    });
-  } else {
-    console.log(entry);
+  if (log_status) {
+    if (log_file && log_file !== '') {
+      fs.appendFile(log_file, entry, function(err) {
+        if (err) {
+          emitter.emit('log-error', {error: err, entry:entry});
+        }
+      });
+    } else {
+      console.log(entry);
+    }
   }
 }
 
@@ -300,9 +319,9 @@ function start(listento) {
   // create the server to listen on the specified host and port
   if ((ssl_options.key && ssl_options.cert) || ssl_options.pfx) {
     // create a secure server
-    https.createServer(ssl_options, onRequest).listen(port, host);
+    server = https.createServer(ssl_options, onRequest).listen(port, host);
   } else {
-    http.createServer(onRequest).listen(port, host);
+    server = http.createServer(onRequest).listen(port, host);
   }
 
   // handle log errors
