@@ -3,6 +3,9 @@
  *
  * @author  hrobertking@cathmhaol.com
  *
+ * @emits 'request-received'
+ * @emits 'response-sent'
+ * 
  * @exports Message as create
  * @exports subscribe as on
  */
@@ -21,6 +24,11 @@ var events = require('events')              // nodejs core
  */
 function Message(request, response) {
   /**
+   * The log entry data
+   */
+  this.log = { };
+
+  /**
    * Returns a log entry given a format and optionally, fields
    *
    * @return   {string}
@@ -30,7 +38,6 @@ function Message(request, response) {
    */
   this.toString = function(format, fields) {
     var entry = ''
-      , mons = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
     ;
 
     format = format || '';
@@ -41,26 +48,36 @@ function Message(request, response) {
      *
      * @return   {string}
      */
-    function NCSA() {
-      return ( request.connection.remoteAddress || '-' ) + '\t' +                               // Get the IP of the user-agent
+    function __NCSA() {
+      var ncsa = new Date(self.log['date']);
+
+      function __ncsaDateFormat(dt) {
+        var mons = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return '[' +
+                 dt.getDate() + '/' +                                               // Get completion time date
+                 mons[dt.getMonth()] + '/' +                                        // Get completion time month name
+                 dt.getFullYear() + ':' +                                           // Get completion time year
+                 ('0' + dt.getHours()).substr(-2) + ':' +                           // Get completion time hours
+                 ('0' + dt.getMinutes()).substr(-2) + ':' +                         // Get completion time minutes
+                 ('0' + dt.getSeconds()).substr(-2) + ' ' +                         // Get completion time seconds
+                 (
+                   (dt.getTimezoneOffset() > 0 ? '-' : '') +                        // flip the sign - JS represents offset backwards
+                   ('0' + Math.floor(dt.getTimezoneOffset() / 60)).substr(-2) +     // Get the hours in the timezone offset
+                   ('0' + (dt.getTimezoneOffset() % 60)).substr(-2)                 // Get the minutes in the timezone offset
+                  ) +                                                               // Time response finished, format %d/%b/%Y:%H:%M:%S %z
+               ']';
+      }
+
+      return ( self.log['c-ip'] || '-' ) + '\t' +                                               // Get the IP of the user-agent
           ( '-' ) + '\t' +                                                                      // RFC 1413 identity of client (not usually known)
-          ( request.username || '-' ) + '\t' +                                                  // user id of end-user (not usually known)
-          ( '[' + response.date.getDate() + '/' +                                               // Get completion time date
-                  mons[response.date.getMonth()] + '/' +                                        // Get completion time month name
-                  response.date.getFullYear() + ':' +                                           // Get completion time year
-                  ('0' + response.date.getHours()).substr(-2) + ':' +                           // Get completion time hours
-                  ('0' + response.date.getMinutes()).substr(-2) + ':' +                         // Get completion time minutes
-                  ('0' + response.date.getSeconds()).substr(-2) + ' ' +                         // Get completion time seconds
-                  ( (response.date.getTimezoneOffset() > 0 ? '-' : '') +                        // flip the sign - JS represents offset backwards
-                    ('0' + Math.floor(response.date.getTimezoneOffset() / 60)).substr(-2) +     // Get the hours in the timezone offset
-                    ('0' + (response.date.getTimezoneOffset() % 60)).substr(-2)                 // Get the minutes in the timezone offset
-                  ) + ']' ) + '\t' +                                                            // Time response finished, format %d/%b/%Y:%H:%M:%S %z
-          ( '"' + (request.method || 'GET' ) + ' ' +                                            // Get the HTTP verb from the request
-                  (request.url || '-' ) + ' ' +                                                 // Get the url from the request
-                  ('HTTP/' + (request.httpVersion || '1.0')) +                                  // Get the HTTP version from the request
+          ( self.log['cs-username'] || '-' ) + '\t' +                                           // user id of end-user (not usually known)
+          ( '[' + __ncsaDateFormat(ncsa) + ']' ) + '\t' +                                       // Time response finished, format %d/%b/%Y:%H:%M:%S %z
+          ( '"' + (self.log['cs-method'] || 'GET' ) + ' ' +                                     // Get the HTTP verb from the request
+                  (self.log['cs-uri-stem'] + self.log['cs-uri-query'] || '-' ) + ' ' +          // Get the url from the request
+                  ('HTTP/' + (self.log['cs-version'] || '1.0')) +                               // Get the HTTP version from the request
                   ('"') ) + '\t' +                                                              // Request line
-          ( response.statusCode || '-' ) + '\t' +                                               // HTTP status code
-          ( Buffer.byteLength(response.data) || '-' )                                           // Bytes transfered to the client
+          ( self.log['sc-status'] || '-' ) + '\t' +                                             // HTTP status code
+          ( self.log['sc-bytes'] || '-' )                                                       // Bytes transfered to the client
           ;
     }
 
@@ -69,110 +86,29 @@ function Message(request, response) {
      *
      * @return   {string}
      */
-    function W3C(elements) {
-      var os = require('os')
-        , field
-        , header
-        , parser = /cs\(([^\)]+)\)/
-      ;
-
-      /**
-       * W3C format functions
-       */
-      function formatDate(dt) {
-        if (dt && !isNaN(dt.getTime())) {
-          return dt.getFullYear() + '-' + ('0' + (dt.getMonth() + 1)).substr(-2) + '-' + ('0' + dt.getDate()).substr(-2);
-        } else {
-          return '-';
-        }
-      }
-      function formatTime(dt) {
-        if (dt && !isNaN(dt.getTime())) {
-          return ('0' + dt.getHours()).substr(-2) + ':' + ('0' + dt.getMinutes()).substr(-2) + ':' + ('0' + dt.getSeconds()).substr(-2);
-        } else {
-          return '-';
-        }
-      }
+    function __W3C(elements) {
+      var field;
 
       for (field in elements) {
-        switch (elements[field].toLowerCase()) {
-          case 'c-ip':            // ip address of client
-            elements[field] = (request.connection.remoteAddress || '-');
-            break;
-          case 'cs-bytes':        // bytes sent by the client
-            elements[field] = (Buffer.byteLength(request.data) || '-');
-            break;
-          case 'cs-host':         // contents of 'host' header
-            elements[field] = (request.headers['host'] || '-');
-            break;
-          case 'cs-method':       // http verb
-            elements[field] = (request.method || 'GET' );
-            break;
-          case 'cs-uri-query':    // query passed to resource
-            elements[field] = (request.url.split('?')[1] || '-');
-            break;
-          case 'cs-uri-stem':     // resource accessed
-            elements[field] = (request.url.split('?')[0] || '-');
-            break;
-          case 'cs-username':     // username of authenticated user
-            elements[field] = (request.username || '-');
-            break;
-          case 'cs-version':      // protocol version used by the client
-            elements[field] = (request.httpVersion || '-');
-            break;
-          case 'date':            // date response sent
-            elements[field] = formatDate(response.date);
-            break;
-          case 's-computername':  // name of computer the log entry is generated on
-            elements[field] = (os.hostname() || '-');
-            break;
-          case 's-ip':            // ip address of computer log entry is generated on
-            elements[field] = (request.connection.localAddress || '-');
-            break;
-          case 's-port':          // port number client is connected to
-            elements[field] = (request.connection.localPort || '-');
-            break;
-          case 's-sitename':      // internet service and instance
-            elements[field] = '-';
-            break;
-          case 'sc-bytes':        // bytes sent by the server
-            elements[field] = Buffer.byteLength(response.data);
-            break;
-          case 'sc-status':       // http status code
-            elements[field] = response.statusCode;
-            break;
-          case 'sc-win32-status': // status of the action in Windows terms
-            break;
-          case 'time':            // time response sent
-            elements[field] = formatTime(response.date);
-            break;
-          case 'time-taken':      // duration of time in seconds (per W3C documentation)
-            elements[field] = ((response.date.getTime() - request.date.getTime())/1000);
-            break;
-          default:                // anything else, like cs(<header>) fields
-            header = parser.exec(elements[field]);
-            if (header) {
-              elements[field] = request.headers[header[1].toLowerCase()] || '-';
-            } else {
-              delete elements[field];
-            }
-        }
+        field = field.toLowerCase();
+        elements[field] = self.log[field] || '-';
       }
+
       return elements.join(' ');
     }
 
     switch (format.toLowerCase()) {
       case 'common':
-        entry = NCSA();
+        entry = __NCSA();
         break;
       case 'extended':
-        entry = [NCSA(), W3C(['cs(Referer)', 'cs(User-Agent)'])].join('\t');
+        entry = [__NCSA(), __W3C(['cs(Referer)', 'cs(User-Agent)'])].join('\t');
         break;
       case 'w3c':
-        entry = W3C(fields);
+        entry = __W3C(fields);
         break;
       default:
-        entry = [NCSA(), W3C(['cs(Referer)', 'cs(User-Agent)', 'time-taken'])].join('\t');
+        entry = [__NCSA(), __W3C(['cs(Referer)', 'cs(User-Agent)', 'time-taken'])].join('\t');
         break;
     }
 
@@ -185,7 +121,7 @@ function Message(request, response) {
     , self = this
   ;
 
-  function generateID() {
+  function __generateId() {
     var guid = '',
       rchar = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
       rseed = 0,
@@ -197,8 +133,48 @@ function Message(request, response) {
 
     return (new Date()).getTime() + guid;
   }
+  self.id = __generateId();
 
-  self.id = generateID();
+  function __log() {
+    var os = require('os')
+      , t = /(\d{2}\:\d{2}\:\d{2})/
+    ;
+
+    function __iso8601(dt) {
+      if (dt && !isNaN(dt.getTime())) {
+        return (dt.getFullYear()) + '-' + 
+               ('0' + (dt.getMonth() + 1)).substr(-2) + '-' +
+               ('0' + dt.getDate()).substr(-2) + 'T' +
+               ('0' + dt.getHours()).substr(-2) + ':' +
+               ('0' + dt.getMinutes()).substr(-2) + ':' +
+               ('0' + dt.getSeconds()).substr(-2) + '.' +
+               ('000' + dt.getMilliseconds()).substr(-3);
+      } else {
+        return '-';
+      }
+    }
+
+    self.log['c-ip'] = request.connection.remoteAddress;
+    self.log['cs-bytes'] = Buffer.byteLength(request.data);
+    self.log['cs-host'] = request.headers['host'];
+    self.log['cs-method'] = request.method;
+    self.log['cs-uri-query'] = request.url.split('?')[1];
+    self.log['cs-uri-stem'] = request.url.split('?')[0];
+    self.log['cs-username'] = request.username;
+    self.log['cs-version'] = request.httpVersion;
+    self.log['date'] = __iso8601(response.date);
+    self.log['s-computername'] = os.hostname();
+    self.log['s-ip'] = request.connection.localAddress;
+    self.log['s-port'] = request.connection.localPort;
+    self.log['s-sitename'] = '';
+    self.log['sc-bytes'] = response.bytes;
+    self.log['sc-status'] = response.statusCode;
+
+    self.log['time-taken'] = (self.response.date || new Date()).getTime() - (self.request.date || new Date()).getTime();
+
+    t = t.exec(self.log['date']);
+    self.log['time'] = t ? t[1] : '';
+  }
 
   // set the date-time the request is received
   request.date = new Date();
@@ -221,17 +197,15 @@ function Message(request, response) {
 
   // set the data handlers
   response.data = '';
-  response.bytes_sent = 0;
   // override the write method because there aren't events fired when data is written to the stream
   response.send = response.write;
   response.write = function(chunk, encoding, callback) {
     response.data += chunk;
-    response.bytes_sent = Buffer.byteLength(response.data);
     response.send(chunk, encoding, callback);
   };
   response.on('finish', function() {
     response.date = new Date();
-    response.time_taken = ((response.date.getTime() - request.date.getTime())/1000);
+    __log();
     emitter.emit('response-sent', self);
   });
 
