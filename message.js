@@ -185,6 +185,21 @@ function Message(request, response) {
     , self = this
   ;
 
+  function generateID() {
+    var guid = '',
+      rchar = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
+      rseed = 0,
+      guid_length = 6;
+
+    while (guid.length < guid_length) {
+      guid += rchar.substr(Math.floor( Math.random() * (rchar.length - 1) ), 1);
+    }
+
+    return (new Date()).getTime() + guid;
+  }
+
+  self.id = generateID();
+
   // set the date-time the request is received
   request.date = new Date();
   response.date = new Date();
@@ -206,14 +221,17 @@ function Message(request, response) {
 
   // set the data handlers
   response.data = '';
+  response.bytes_sent = 0;
   // override the write method because there aren't events fired when data is written to the stream
   response.send = response.write;
   response.write = function(chunk, encoding, callback) {
     response.data += chunk;
+    response.bytes_sent = Buffer.byteLength(response.data);
     response.send(chunk, encoding, callback);
   };
   response.on('finish', function() {
     response.date = new Date();
+    response.time_taken = ((response.date.getTime() - request.date.getTime())/1000);
     emitter.emit('response-sent', self);
   });
 
