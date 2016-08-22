@@ -6,6 +6,9 @@
  * @exports routes as routes
  * @exports subscribe as on
  *
+ * @emits    route-complete
+ * @emits    route-error
+ *
  * @see The <a href="https://github.com/hrobertking/node-experiments">node-experiments</a> repo for information about the writer module
  * @see The <a href="https://github.com/hrobertking/node-experiments">node-experiments</a> repo for information about the message module
  */
@@ -31,7 +34,7 @@ routes['/favicon.ico'] = ignored;
 //    err_log = path.join(__dirname, './logs/error.log');
 //
 //    // handle the request
-//    emitter.emit('response-sent', writer.writeNotFound(message));
+//    emitter.emit('route-complete', writer.writeNotFound(message));
 // };
 // routes['/ReST/user'] = function(message) {
 //    var sql = require('node-sqlserver')
@@ -40,10 +43,10 @@ routes['/favicon.ico'] = ignored;
 //    ;
 //    sql.query(connection_string, query, function (err, results) {
 //      if (err) {
-//        emitter.emit('response-sent', writer.writeServerError(message, err));
+//        emitter.emit('route-complete', writer.writeServerError(message, err));
 //        return;
 //      }
-//      emitter.emit('response-sent', writer.writeDataJson(message, results));
+//      emitter.emit('route-complete', writer.writeDataJson(message, results));
 //    });
 // };
 /* ^ ---------------------- ROUTING HANDLERS ---------------------------- ^ */
@@ -90,10 +93,10 @@ Object.defineProperty(exports, 'routes', {
  *
  * @param    {server.Message} message
  *
- * @emits    response-sent
+ * @emits    route-complete
  */
 function ignored(message) {
-  emitter.emit('response-sent', writer.writeEmptyDocument(message));
+  emitter.emit('route-complete', writer.writeEmptyDocument(message));
 }
 
 /**
@@ -120,7 +123,7 @@ function sleep(ms) {
  *
  * @param    {server.Message} message
  *
- * @emits    response-sent
+ * @emits    route-complete
  * @emits    route-error
  */
 function unhandled(message) {
@@ -137,15 +140,15 @@ function unhandled(message) {
     try {
       contents = fs.readFileSync(filename, 'binary');
       if (Buffer.byteLength(contents, 'binary') > 0) {
-        emitter.emit('response-sent', writer.writeAsFile(message,
+        emitter.emit('route-complete', writer.writeAsFile(message,
                  contents,
                  path.extname(filename).replace(/^\./, ''))
         );
       } else {
-        emitter.emit('response-sent', writer.writeNotFound(message));
+        emitter.emit('route-complete', writer.writeNotFound(message));
       }
     } catch(err) {
-      emitter.emit('response-sent', writer.writeNotFound(message));
+      emitter.emit('route-complete', writer.writeNotFound(message));
     }
   }
 
@@ -203,7 +206,7 @@ function route(message) {
 exports.route = route;
 
 /**
- * Registers event handlers for request-received, response-sent, and route-error events
+ * Registers event handlers for request-received, route-complete, and route-error events
  *
  * @return   {void}
  *
@@ -212,7 +215,7 @@ exports.route = route;
  */
 function subscribe(eventname, handler) {
   if ((/request\-received|response\-sent|route\-error/).test(eventname)) {
-    emitter.removeListener(name, handler);
+    emitter.removeListener(eventname, handler);
     emitter.on(eventname, handler);
   }
 }
