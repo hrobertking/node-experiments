@@ -112,7 +112,7 @@ Object.defineProperty(exports, 'logging', {
     return log_status;
   },
   set: function(value) {
-    log_status = (log_status ? true : false);
+    log_status = (value ? true : false);
   }
 });
 
