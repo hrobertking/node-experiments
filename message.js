@@ -53,19 +53,17 @@ function Message(request, response) {
 
       function __ncsaDateFormat(dt) {
         var mons = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        return '[' +
-                 dt.getDate() + '/' +                                               // Get completion time date
-                 mons[dt.getMonth()] + '/' +                                        // Get completion time month name
-                 dt.getFullYear() + ':' +                                           // Get completion time year
-                 ('0' + dt.getHours()).substr(-2) + ':' +                           // Get completion time hours
-                 ('0' + dt.getMinutes()).substr(-2) + ':' +                         // Get completion time minutes
-                 ('0' + dt.getSeconds()).substr(-2) + ' ' +                         // Get completion time seconds
-                 (
-                   (dt.getTimezoneOffset() > 0 ? '-' : '') +                        // flip the sign - JS represents offset backwards
-                   ('0' + Math.floor(dt.getTimezoneOffset() / 60)).substr(-2) +     // Get the hours in the timezone offset
-                   ('0' + (dt.getTimezoneOffset() % 60)).substr(-2)                 // Get the minutes in the timezone offset
-                  ) +                                                               // Time response finished, format %d/%b/%Y:%H:%M:%S %z
-               ']';
+        return dt.getDate() + '/' +                                               // Get completion time date
+               mons[dt.getMonth()] + '/' +                                        // Get completion time month name
+               dt.getFullYear() + ':' +                                           // Get completion time year
+               ('0' + dt.getHours()).substr(-2) + ':' +                           // Get completion time hours
+               ('0' + dt.getMinutes()).substr(-2) + ':' +                         // Get completion time minutes
+               ('0' + dt.getSeconds()).substr(-2) + ' ' +                         // Get completion time seconds
+               (
+                 (dt.getTimezoneOffset() > 0 ? '-' : '') +                        // flip the sign - JS represents offset backwards
+                 ('0' + Math.floor(dt.getTimezoneOffset() / 60)).substr(-2) +     // Get the hours in the timezone offset
+                 ('0' + (dt.getTimezoneOffset() % 60)).substr(-2)                 // Get the minutes in the timezone offset
+                );                                                                // Time response finished, format %d/%b/%Y:%H:%M:%S %z
       }
 
       return ( self.log['c-ip'] || '-' ) + '\t' +                                               // Get the IP of the user-agent
@@ -73,7 +71,11 @@ function Message(request, response) {
           ( self.log['cs-username'] || '-' ) + '\t' +                                           // user id of end-user (not usually known)
           ( '[' + __ncsaDateFormat(ncsa) + ']' ) + '\t' +                                       // Time response finished, format %d/%b/%Y:%H:%M:%S %z
           ( '"' + (self.log['cs-method'] || 'GET' ) + ' ' +                                     // Get the HTTP verb from the request
-                  (self.log['cs-uri-stem'] + self.log['cs-uri-query'] || '-' ) + ' ' +          // Get the url from the request
+                  ((
+                    (self.log['cs-uri-stem'] || '') + 
+                    (self.log['cs-uri-query'] || '')
+                   ) || '-' 
+                  ) + ' ' +                                                                     // Get the url from the request
                   ('HTTP/' + (self.log['cs-version'] || '1.0')) +                               // Get the HTTP version from the request
                   ('"') ) + '\t' +                                                              // Request line
           ( self.log['sc-status'] || '-' ) + '\t' +                                             // HTTP status code
