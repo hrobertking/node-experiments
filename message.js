@@ -193,6 +193,7 @@ function Message(request, response) {
   });
   request.on('end', function() {
     request.cgi = qs.parse(request.method.toUpperCase() === 'POST' ? request.data : url.parse(request.url).query);
+    __log();
     // emit the request event
     emitter.emit('request-received', self);
   });
