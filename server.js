@@ -258,9 +258,40 @@ function writeLog(entry) {
 
   if (log_status) {
     if (log_file && log_file !== '') {
+      // appendFile will append the file as long as the path exists
       fs.appendFile(log_file, entry, function(err) {
+        var path = require('path')
+          , f_path
+          , index = 0
+        ;
+
+        function buildPath() {
+          var r_path = f_path.slice(0, index + 1).join(path.sep);
+          if (index < f_path.length) {
+            fs.stat(r_path, function(err, stats) {
+                if (err) {
+                  if (err.code === 'ENOENT') { // not exists
+                    fs.mkdir(r_path, buildPath);
+                  }
+                } else if (stats) {
+                  if (stats.isDirectory()) {
+                    index += 1;
+                    buildPath();
+                  }
+                }
+              });
+          }
+        }
+
+        // the most likely event is a file that doesn't exist, so try to
+        // fix it if that's the case
         if (err) {
-          emitter.emit('log-error', {error: err, entry:entry});
+          if (err.code === 'ENOENT') {
+            f_path = path.dirname(log_file).split(path.sep);
+            buildPath();
+          } else {
+            emitter.emit('log-error', { error: err, entry:entry, file:log_file });
+          }
         }
       });
     } else {
