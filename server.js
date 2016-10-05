@@ -16,20 +16,20 @@
  * @see The <a href="https://github.com/hrobertking/node-experiments">node-experiments</a> repo for information about the router module
  */
 
-var events = require('events')                        // nodejs core
-  , fs = require('fs')                                // nodejs core
-  , http = require('http')                            // nodejs core
-  , message = require('./message')                    // message module
-  , router = require('./router')                      // router module
-  , emitter = new events.EventEmitter()               // event emitter
-  , host                                              // the hostname or host address
-  , io                                                // socket.io interface
-  , ip_auth = [ ]                                     // array of IPv4 clients authorized
-  , log_file                                          // filename of the log
-  , log_status = true                                 // write log entry if true
-  , port                                              // port used by web-server to listen
-  , server                                            // http(s) server
-  , ssl_options = { cert:null, key:null, pfx:null }   // ssl options object to contain 'key' and 'cert'
+var events = require('events')                        /* nodejs core                                    */
+  , fs = require('fs')                                /* nodejs core                                    */
+  , http = require('http')                            /* nodejs core                                    */
+  , message = require('./message')                    /* message module                                 */
+  , router = require('./router')                      /* router module                                  */
+  , emitter = new events.EventEmitter()               /* event emitter                                  */
+  , host                                              /* the hostname or host address                   */
+  , io                                                /* socket.io interface                            */
+  , ip_auth = [ ]                                     /* array of IPv4 clients authorized               */
+  , log_file                                          /* filename of the log                            */
+  , log_status = true                                 /* write log entry if true                        */
+  , port                                              /* port used by web-server to listen              */
+  , server                                            /* http(s) server                                 */
+  , ssl_options = { cert:null, key:null, pfx:null }   /* ssl options object to contain 'key' and 'cert' */
 ;
 
 /**
@@ -127,7 +127,7 @@ Object.defineProperty(exports, 'port', {
     return port;
   },
   set: function(value) {
-    // use a 16-bit unsigned int, positive values only
+    /* use a 16-bit unsigned int, positive values only */
     if (!isNaN(value) && value > 0 && value < 65536) {
       port = Math.floor(value);
     }
@@ -157,7 +157,7 @@ Object.defineProperty(exports, 'router', {
  */
 function authorizedClient(req) {
   var ndx
-    , ok = (ip_auth.length === 0) // assume it isn't authorized
+    , ok = (ip_auth.length === 0) /* assume it isn't authorized */
     , ip
     , regex
   ;
@@ -187,11 +187,11 @@ function cert(key, certificate) {
       }
   ;
 
-  // check the 'key' to see if it's likely that it's base64 encoded
+  /* check the 'key' to see if it's likely that it's base64 encoded */
   if (base64.test(key)) {
     contents.key = key;
   } else {
-    // figure out if we have a pfx or a key/certificate pair
+    /* figure out if we have a pfx or a key/certificate pair */
     switch (path.extname(key).replace(/^\./, '')) {
       case 'pem':
         try {
@@ -208,11 +208,11 @@ function cert(key, certificate) {
     }
   }
 
-  // check the 'certificate' to see if it's likely that it's base64 encoded
+  /* check the 'certificate' to see if it's likely that it's base64 encoded */
   if (base64.test(certificate)) {
     contents.cert = certificate;
   } else {
-    // figure out if we have a pfx or a key/certificate pair
+    /* figure out if we have a pfx or a key/certificate pair */
     switch (path.extname(certificate).replace(/^\./, '')) {
       case 'pem':
         try {
@@ -229,7 +229,7 @@ function cert(key, certificate) {
     }
   }
 
-  // set the ssl_options - test truthy so we skip empty strings
+  /* set the ssl_options - test truthy so we skip empty strings */
   if (contents.cert) {
     ssl_options.cert = contents.cert;
   }
@@ -258,7 +258,7 @@ function writeLog(entry) {
 
   if (log_status) {
     if (log_file && log_file !== '') {
-      // appendFile will append the file as long as the path exists
+      /* appendFile will append the file as long as the path exists */
       fs.appendFile(log_file, entry, function(err) {
         var path = require('path')
           , f_path
@@ -270,7 +270,7 @@ function writeLog(entry) {
           if (index < f_path.length) {
             fs.stat(r_path, function(err, stats) {
                 if (err) {
-                  if (err.code === 'ENOENT') { // not exists
+                  if (err.code === 'ENOENT') { /* not exists */
                     fs.mkdir(r_path, buildPath);
                   }
                 } else if (stats) {
@@ -283,8 +283,8 @@ function writeLog(entry) {
           }
         }
 
-        // the most likely event is a file that doesn't exist, so try to
-        // fix it if that's the case
+        /* the most likely event is a file that doesn't exist, so try to */
+        /* fix it if that's the case                                     */
         if (err) {
           if (err.code === 'ENOENT') {
             f_path = path.dirname(log_file).split(path.sep);
@@ -311,14 +311,14 @@ function writeLog(entry) {
  * @emits    response-sent
  */
 function start(listento) {
-  // set the port if it's passed in
+  /* set the port if it's passed in */
   if (listento) {
     if (!isNaN(listento) && listento > 0 && listento < 65536) {
       port = Math.floor(listento);
     }
   }
 
-  // set the host if it isn't already and we can figure it out
+  /* set the host if it isn't already and we can figure it out */
   if (!host) {
     var os = require('os')
       , cards = os.networkInterfaces()
@@ -334,7 +334,7 @@ function start(listento) {
     }
   }
 
-  // request handler
+  /* request handler */
   function onRequest(request, response) {
     var msg
     ;
@@ -348,60 +348,78 @@ function start(listento) {
     msg.on('request-received', function(message) {
         var io_obj = message.log;
 
-        // route the message
+        /* route the message */
         router.route(message);
 
-        // notify socket subscribers a request was received
+        /* notify socket subscribers a request was received */
         io_obj['id'] = message.id;
         io_obj['event-type'] = 'request';
-        io.emit('communication-event', io_obj);
+        if (io) {
+          io.emit('communication-event', io_obj);
+        }
       });
 
     msg.on('response-sent', function(message) {
         var io_obj = message.log;
 
-        // write the log entry
+        /* write the log entry */
         writeLog(message);
 
         io_obj['id'] = message.id;
         io_obj['event-type'] = 'response';
 
-        // notify socket subscribers the response was sent
-        io.emit('communication-event', io_obj);
+        /* notify socket subscribers the response was sent */
+        if (io) {
+          io.emit('communication-event', io_obj);
+        }
       });
   }
 
-  // create the server to listen on the specified host and port
+  /* create the server to listen on the specified host and port */
   if ((ssl_options.key && ssl_options.cert) || ssl_options.pfx) {
-    // create a secure server
+    /* create a secure server */
     server = https.createServer(ssl_options, onRequest).listen(port, host);
   } else {
     server = http.createServer(onRequest).listen(port, host);
   }
 
-  // handle log errors
+  /* ------------------------------------------- */
+  /* if I were using express, I would need to do */
+  /* something like the following to get the     */
+  /* server variable set correctly               */
+  /* ------------------------------------------- */
+  /* var app = require('express');               */
+  /* server = require('http').Server(app);       */
+  /* ------------------------------------------- */
+
+
+  /* handle log errors */
   emitter.on('log-error', function(params) {
     console.log('Error: ' + params.error);
     console.log(params.entry);
   });
 
-  // set up RUM
-  io = require('socket.io')(server);
-  // Set socket.io listeners.
-  io.on('connection', function(socket) {
-      console.log('a user connected');
-      socket.on('disconnect', function() {
-        console.log('user disconnected');
-      });
-    });
-  // set up RUM event bubbling
-  router.on('route-error', function(message) {
-      io.emit('error-event', {
-          'id':message.id,
-          'uri':message.request.url,
-          'error':message.response.statusCode
+  /* set up RUM */
+  try {
+    io = require('socket.io')(server);
+    /* Set socket.io listeners */
+    io.on('connection', function(socket) {
+        console.log('a user connected');
+        socket.on('disconnect', function() {
+          console.log('user disconnected');
         });
-    });
+      });
+    /* set up RUM event bubbling */
+    router.on('route-error', function(message) {
+        io.emit('error-event', {
+            'id':message.id,
+            'uri':message.request.url,
+            'error':message.response.statusCode
+          });
+      });
+  } catch(oops) {
+    console.log('RUM has failed: ' + oops);
+  }
 }
 exports.start = start;
 
