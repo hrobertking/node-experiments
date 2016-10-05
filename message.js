@@ -10,8 +10,8 @@
  * @exports subscribe as on
  */
 
-var events = require('events')              // nodejs core
-  , emitter = new events.EventEmitter()     // event emitter
+var events = require('events')              /* nodejs core   */
+  , emitter = new events.EventEmitter()     /* event emitter */
 ;
 
 /**
@@ -27,6 +27,12 @@ function Message(request, response) {
    * The log entry data
    */
   this.log = { };
+
+  /**
+   * The address of the message. Contains port, family, and address
+   * @type     {object}
+   */
+  this.origin = { address:'', family:'', port:'' };
 
   /**
    * Returns a log entry given a format and optionally, fields
@@ -53,33 +59,33 @@ function Message(request, response) {
 
       function __ncsaDateFormat(dt) {
         var mons = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        return dt.getDate() + '/' +                                               // Get completion time date
-               mons[dt.getMonth()] + '/' +                                        // Get completion time month name
-               dt.getFullYear() + ':' +                                           // Get completion time year
-               ('0' + dt.getHours()).substr(-2) + ':' +                           // Get completion time hours
-               ('0' + dt.getMinutes()).substr(-2) + ':' +                         // Get completion time minutes
-               ('0' + dt.getSeconds()).substr(-2) + ' ' +                         // Get completion time seconds
+        return dt.getDate() + '/' +
+               mons[dt.getMonth()] + '/' +
+               dt.getFullYear() + ':' +
+               ('0' + dt.getHours()).substr(-2) + ':' +
+               ('0' + dt.getMinutes()).substr(-2) + ':' +
+               ('0' + dt.getSeconds()).substr(-2) + ' ' +
                (
-                 (dt.getTimezoneOffset() > 0 ? '-' : '') +                        // flip the sign - JS represents offset backwards
-                 ('0' + Math.floor(dt.getTimezoneOffset() / 60)).substr(-2) +     // Get the hours in the timezone offset
-                 ('0' + (dt.getTimezoneOffset() % 60)).substr(-2)                 // Get the minutes in the timezone offset
-                );                                                                // Time response finished, format %d/%b/%Y:%H:%M:%S %z
+                 (dt.getTimezoneOffset() > 0 ? '-' : '') +
+                 ('0' + Math.floor(dt.getTimezoneOffset() / 60)).substr(-2) +
+                 ('0' + (dt.getTimezoneOffset() % 60)).substr(-2)
+                );
       }
 
-      return ( self.log['c-ip'] || '-' ) + '\t' +                                               // Get the IP of the user-agent
-          ( '-' ) + '\t' +                                                                      // RFC 1413 identity of client (not usually known)
-          ( self.log['cs-username'] || '-' ) + '\t' +                                           // user id of end-user (not usually known)
-          ( '[' + __ncsaDateFormat(ncsa) + ']' ) + '\t' +                                       // Time response finished, format %d/%b/%Y:%H:%M:%S %z
-          ( '"' + (self.log['cs-method'] || 'GET' ) + ' ' +                                     // Get the HTTP verb from the request
+      return ( self.log['c-ip'] || '-' ) + '\t' +
+          ( '-' ) + '\t' +
+          ( self.log['cs-username'] || '-' ) + '\t' +
+          ( '[' + __ncsaDateFormat(ncsa) + ']' ) + '\t' +
+          ( '"' + (self.log['cs-method'] || 'GET' ) + ' ' +
                   ((
                     (self.log['cs-uri-stem'] || '') + 
                     (self.log['cs-uri-query'] || '')
                    ) || '-' 
-                  ) + ' ' +                                                                     // Get the url from the request
-                  ('HTTP/' + (self.log['cs-version'] || '1.0')) +                               // Get the HTTP version from the request
-                  ('"') ) + '\t' +                                                              // Request line
-          ( self.log['sc-status'] || '-' ) + '\t' +                                             // HTTP status code
-          ( self.log['sc-bytes'] || '-' )                                                       // Bytes transfered to the client
+                  ) + ' ' +
+                  ('HTTP/' + (self.log['cs-version'] || '1.0')) +
+                  ('"') ) + '\t' +
+          ( self.log['sc-status'] || '-' ) + '\t' +
+          ( self.log['sc-bytes'] || '-' )
           ;
     }
 
@@ -123,6 +129,13 @@ function Message(request, response) {
     , self = this
   ;
 
+  /* set the origin of the message */
+  try {
+    this.origin = request.socket.address();
+  } catch(ignore) {
+    /* we'll ignore any exception raised by calling the address method */
+  }
+
   function __generateId() {
     var guid = '',
       rchar = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
@@ -133,9 +146,11 @@ function Message(request, response) {
       guid += rchar.substr(Math.floor( Math.random() * (rchar.length - 1) ), 1);
     }
 
-    return (new Date()).getTime() + guid;
+    return (new Date()).getTime() + '::' + guid;
   }
-  self.id = __generateId();
+  self.id = self.origin.address + '::' +
+            self.origin.port + '::' + 
+            __generateId();
 
   function __log() {
     var os = require('os')
@@ -178,15 +193,15 @@ function Message(request, response) {
     self.log['time'] = t ? t[1] : '';
   }
 
-  // set the date-time the request is received
+  /* set the date-time the request is received */
   request.date = new Date();
   response.date = new Date();
 
-  // set the encoding
+  /* set the encoding */
   request.setEncoding('utf8');
-  // get the Basic Authorization username if it's present
+  /* get the Basic Authorization username if it's present */
   request.username = (new Buffer(((request.headers['authorization'] || '').split(/\s+/).pop() || ''), 'base64')).toString().split(/:/)[0];
-  // set the request data handlers
+  /* set the request data handlers */
   request.data = '';
   request.on('data', function(chunk) {
     request.data += chunk;
@@ -194,13 +209,13 @@ function Message(request, response) {
   request.on('end', function() {
     request.cgi = qs.parse(request.method.toUpperCase() === 'POST' ? request.data : url.parse(request.url).query);
     __log();
-    // emit the request event
+    /* emit the request event */
     emitter.emit('request-received', self);
   });
 
-  // set the data handlers
+  /* set the data handlers */
   response.data = '';
-  // override the write method because there aren't events fired when data is written to the stream
+  /* override the write method because there aren't events fired when data is written to the stream */
   response.send = response.write;
   response.write = function(chunk, encoding, callback) {
     response.data += chunk;
