@@ -13,7 +13,7 @@ var path = require('path')
   , invoked = process.argv[1].split(path.sep).pop()
   , opts = require('./cli-opts')
   , server = require('./server')
-  , cli_args = opts.args;
+  , cli_args = opts.args
 ;
 
 server.log = path.join(__dirname, 'logs/' + (cli_args.log || 'server.log'));
