@@ -11,7 +11,7 @@
  */
 
 var events = require('events')              /* nodejs core   */
-  , emitter = new events.EventEmitter()     /* event emitter */
+  , emitter
 ;
 
 /**
@@ -253,6 +253,10 @@ function Message(request, response) {
 
   self.request = request;
   self.response = response;
+
+  /* initialize the event emitter */
+  emitter = new events.EventEmitter();
+
   return self;
 }
 exports.create = Message;
@@ -267,8 +271,7 @@ exports.create = Message;
  */
 function subscribe(eventname, handler) {
   if ((/request\-received|response\-sent/).test(eventname)) {
-    emitter.removeListener(eventname, handler);
-    emitter.on(eventname, handler);
+    emitter.once(eventname, handler);
   }
 }
 exports.on = subscribe;
