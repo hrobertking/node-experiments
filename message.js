@@ -94,7 +94,7 @@ function Message(request, response) {
      * @return   {string}
      */
     function __VirtualHost() {
-      return self.log['s-ip'] + (self.log['s-port'] ? ':' : '') + self.log['s-port'];
+      return (self.log['s-ip'] + (self.log['s-port'] ? ':' : '') + self.log['s-port']) || '-';
     }
 
     /**
@@ -119,8 +119,8 @@ function Message(request, response) {
         break;
       case 'extended': /* NCSA extended or combined log format */
         entry = [ __CommonLogFormat(),
-                  self.log['cs(Referer)'],
-                  self.log['cs(User-Agent)']
+                  self.log['cs(Referer)'] || '-',
+                  self.log['cs(User-Agent)'] || '-'
                 ].join('\t');
         break;
       case 'host':
@@ -134,9 +134,9 @@ function Message(request, response) {
       default:
         entry = [ __VirtualHost(),
                   __CommonLogFormat(),
-                  self.log['cs(Referer)'],
-                  self.log['cs(User-Agent)'],
-                  self.log['time-taken']
+                  self.log['cs(Referer)'] || '-',
+                  self.log['cs(User-Agent)'] || '-',
+                  self.log['time-taken'] || '-'
                 ].join('\t');
         break;
     }
@@ -210,6 +210,9 @@ function Message(request, response) {
     self.log['s-sitename'] = '';
     self.log['sc-bytes'] = response.bytes;
     self.log['sc-status'] = response.statusCode;
+
+    self.log['cs(Referer)'] = request.headers['referer'];
+    self.log['cs(User-Agent)'] = request.headers['user-agent'];
 
     self.log['time-taken'] = (self.response.date || new Date()).getTime() - (self.request.date || new Date()).getTime();
 
