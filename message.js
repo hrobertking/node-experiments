@@ -54,28 +54,27 @@ function Message(request, response) {
      *
      * @return   {string}
      */
-    function __NCSA() {
-      var ncsa = new Date(self.log['date']);
+    function __CommonLogFormat() {
+      var msg_date = new Date(self.log['date'])
+        , mos = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+      ;
 
-      function __ncsaDateFormat(dt) {
-        var mons = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        return dt.getDate() + '/' +
-               mons[dt.getMonth()] + '/' +
-               dt.getFullYear() + ':' +
-               ('0' + dt.getHours()).substr(-2) + ':' +
-               ('0' + dt.getMinutes()).substr(-2) + ':' +
-               ('0' + dt.getSeconds()).substr(-2) + ' ' +
-               (
-                 (dt.getTimezoneOffset() > 0 ? '-' : '') +
-                 ('0' + Math.floor(dt.getTimezoneOffset() / 60)).substr(-2) +
-                 ('0' + (dt.getTimezoneOffset() % 60)).substr(-2)
-                );
-      }
+      msg_date = msg_date.getDate() + '/' +
+           mos[msg_date.getMonth()] + '/' +
+           msg_date.getFullYear() + ':' +
+           ('0' + msg_date.getHours()).substr(-2) + ':' +
+           ('0' + msg_date.getMinutes()).substr(-2) + ':' +
+           ('0' + msg_date.getSeconds()).substr(-2) + ' ' +
+           (
+             (msg_date.getTimezoneOffset() > 0 ? '-' : '') +
+             ('0' + Math.floor(msg_date.getTimezoneOffset() / 60)).substr(-2) +
+             ('0' + (msg_date.getTimezoneOffset() % 60)).substr(-2)
+            );
 
       return ( self.log['c-ip'] || '-' ) + '\t' +
-          ( '-' ) + '\t' +
+          ( self.log['cs-logname'] || '-' ) + '\t' +
           ( self.log['cs-username'] || '-' ) + '\t' +
-          ( '[' + __ncsaDateFormat(ncsa) + ']' ) + '\t' +
+          ( '[' + msg_date + ']' ) + '\t' +
           ( '"' + (self.log['cs-method'] || 'GET' ) + ' ' +
                   ((
                     (self.log['cs-uri-stem'] || '') + 
@@ -87,6 +86,15 @@ function Message(request, response) {
           ( self.log['sc-status'] || '-' ) + '\t' +
           ( self.log['sc-bytes'] || '-' )
           ;
+    }
+
+    /**
+     * Returns the virtual host
+     *
+     * @return   {string}
+     */
+    function __VirtualHost() {
+      return self.log['s-ip'] + (self.log['s-port'] ? ':' : '') + self.log['s-port'];
     }
 
     /**
@@ -107,16 +115,29 @@ function Message(request, response) {
 
     switch (format.toLowerCase()) {
       case 'common':
-        entry = __NCSA();
+        entry = __CommonLogFormat();
         break;
-      case 'extended':
-        entry = [__NCSA(), __W3C(['cs(Referer)', 'cs(User-Agent)'])].join('\t');
+      case 'extended': /* NCSA extended or combined log format */
+        entry = [ __CommonLogFormat(),
+                  self.log['cs(Referer)'],
+                  self.log['cs(User-Agent)']
+                ].join('\t');
+        break;
+      case 'host':
+        entry = [ __VirtualHost(),
+                  __CommonLogFormat()
+                ].join('\t');
         break;
       case 'w3c':
         entry = __W3C(fields);
         break;
       default:
-        entry = [__NCSA(), __W3C(['cs(Referer)', 'cs(User-Agent)', 'time-taken'])].join('\t');
+        entry = [ __VirtualHost(),
+                  __CommonLogFormat(),
+                  self.log['cs(Referer)'],
+                  self.log['cs(User-Agent)'],
+                  self.log['time-taken']
+                ].join('\t');
         break;
     }
 
@@ -171,6 +192,9 @@ function Message(request, response) {
       }
     }
 
+    /* remote logname is only available if mod_ident is present and IdentityCheck is on */
+    self.log['cs-logname'] = '-';
+
     self.log['c-ip'] = request.connection.remoteAddress;
     self.log['cs-bytes'] = Buffer.byteLength(request.data);
     self.log['cs-host'] = request.headers['host'];
@@ -181,8 +205,8 @@ function Message(request, response) {
     self.log['cs-version'] = request.httpVersion;
     self.log['date'] = __iso8601(response.date);
     self.log['s-computername'] = os.hostname();
-    self.log['s-ip'] = request.connection.localAddress;
-    self.log['s-port'] = request.connection.localPort;
+    self.log['s-ip'] = self.origin.address || request.connection.localAddress;
+    self.log['s-port'] = self.origin.port || request.connection.localPort;
     self.log['s-sitename'] = '';
     self.log['sc-bytes'] = response.bytes;
     self.log['sc-status'] = response.statusCode;
