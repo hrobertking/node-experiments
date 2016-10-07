@@ -57,7 +57,19 @@ function Message(request, response) {
     function __CommonLogFormat() {
       var msg_date = new Date(self.log['date'])
         , mos = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        , tz_offset_ms = (new Date()).getTimezoneOffset() * 60000
       ;
+
+      /**
+       * If the log date is in ISO8601 format without the timezone
+       * offset, that means when it's parsed as a date, it'll
+       * automatically convert to GMT. We have to add the
+       * timezone offset back to it in order to get the actual
+       * time.
+       */
+      if (!(/[\-\+]/).test(self.log['date'])) {
+        msg_date = new Date(msg_date.getTime() + tz_offset_ms);
+      }
 
       msg_date = msg_date.getDate() + '/' +
            mos[msg_date.getMonth()] + '/' +
@@ -179,6 +191,13 @@ function Message(request, response) {
     ;
 
     function __iso8601(dt) {
+      var tz = (new Date()).getTimezoneOffset()
+        , offset = (tz > 0 ? '-' : '+') +
+                   ('0' + Math.floor(Math.abs(tz)/60)).substr(-2) +
+                   ':' +
+                   ('0' + (Math.abs(tz) % 60)).substr(-2)
+      ;
+
       if (dt && !isNaN(dt.getTime())) {
         return (dt.getFullYear()) + '-' + 
                ('0' + (dt.getMonth() + 1)).substr(-2) + '-' +
@@ -186,7 +205,8 @@ function Message(request, response) {
                ('0' + dt.getHours()).substr(-2) + ':' +
                ('0' + dt.getMinutes()).substr(-2) + ':' +
                ('0' + dt.getSeconds()).substr(-2) + '.' +
-               ('000' + dt.getMilliseconds()).substr(-3);
+               ('000' + dt.getMilliseconds()).substr(-3) +
+               offset;
       } else {
         return '-';
       }
