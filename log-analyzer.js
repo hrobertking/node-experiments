@@ -55,6 +55,7 @@ Object.defineProperty(exports, 'file', {
 
 /**
  * Analyzes the dataset to determine if an attack is in process
+ *
  * @return  {boolean}
  */
 function analyze() {
@@ -137,9 +138,11 @@ function Entry(line) {
 
 /**
  * Reads the file into the dataset
+ *
+ * @return  {void}
+ *
  * @emits   file-read-error
  * @emits   read-complete
- * @return  {void}
  */
 function readFile() {
   var rstream    /* read stream */
@@ -200,7 +203,9 @@ exports.read = readFile;
 
 /**
  * Registers event handlers for emitted events
+ *
  * @return  {void}
+ *
  * @param   {string} eventname
  * @param   {function} handler
  */
@@ -214,7 +219,9 @@ exports.on = subscribe;
 
 /**
  * Emits an error and dumps it to the console as well
+ *
  * @return  {void}
+ *
  * @param   {string} name
  * @param   {object} arg
  */
@@ -225,8 +232,11 @@ function __err(name, arg) {
 
 /**
  * Sets the log file
+ *
  * @return  {void}
+ *
  * @param   {string} value
+ *
  * @emits   'file-not-found'
  */
 function __setLogFile(value) {

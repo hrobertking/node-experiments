@@ -49,19 +49,19 @@ Object.defineProperty(exports, 'filename', {
  */
 function writeDataCsv(message, data) {
   var fname = filename.replace(/\.[\w]+$/, '.csv')
-    , i           // array loop index
-    , key         // hash index
-    , keys = []   // a hash of all the keys
-    , head = []   // output array
-    , lines = []  // output array
-    , datum       // an individual data element
-    , size        // size of content in bytes
-    , str = ''    // the content to write out
+    , i           /* array loop index           */
+    , key         /* hash index                 */
+    , keys = []   /* a hash of all the keys     */
+    , head = []   /* output array               */
+    , lines = []  /* output array               */
+    , datum       /* an individual data element */
+    , size        /* size of content in bytes   */
+    , str = ''    /* the content to write out   */
   ;
 
   if (message.response) {
     if (data) {
-      // Generate a keys object
+      /* Generate a keys object */
       for (i in data) {
         line = data[i];
         for (key in line) {
@@ -69,12 +69,12 @@ function writeDataCsv(message, data) {
         }
       }
 
-      // put the data in a consistent order
+      /* put the data in a consistent order */
       for (key in keys) {
-        // There isn't really a good way to represent arrays or objects in
-        // a CSV, because the internal representation is going to be 
-        // comma-separated too, making the header not correspond to the data 
-        // items, so we're just going to dump out the primitive types.
+        /* There isn't really a good way to represent arrays or objects in   */
+        /* a CSV, because the internal representation is going to be         */
+        /* comma-separated too, making the header not correspond to the data */
+        /* items, so we're just going to dump out the primitive types.       */
         if (keys[key] === 'boolean' || 
             keys[key] === 'number' || 
             keys[key] === 'string') {
@@ -82,22 +82,22 @@ function writeDataCsv(message, data) {
           for (i in data) {
             datum = data[i][key];
             if (!lines[i]) {
-              lines[i] = [];
+              lines[i] = [ ];
             }
             lines[i].push( datum )
           }
         }
       }
 
-      // write the head (column definition)
+      /* write the head (column definition) */
       str += head.join(',')+'\n';
 
-      // write the lines
+      /* write the lines */
       for (i in lines) {
         str += lines[i].join(',')+'\n';
       }
 
-      // set the size
+      /* set the size */
       size = Buffer.byteLength(str);
 
       writeResponseHead(message.response, 'csv', size)
@@ -123,12 +123,12 @@ exports.writeAsCSV = writeDataCsv;
  */
 function writeDataHtml(message, data) {
   var fname = filename.replace(/\.[\w]+$/, '.html')
-    , i           // array loop index
-    , line        // line out
-    , item        // data item
-    , key         // item key index
-    , size        // size of content in bytes
-    , str = ''    // the content to write out
+    , i           /* array loop index         */
+    , line        /* line out                 */
+    , item        /* data item                */
+    , key         /* item key index           */
+    , size        /* size of content in bytes */
+    , str = ''    /* the content to write out */
   ;
 
   if (message.response) {
@@ -173,9 +173,9 @@ exports.writeAsHTML = writeDataHtml;
  */
 function writeDataJson(message, data) {
   var fname = filename.replace(/\.[\w]+$/, '.json')
-    , i           // array loop index
-    , size        // size of content in bytes
-    , str = [ ]   // the content to write out
+    , i           /* array loop index         */
+    , size        /* size of content in bytes */
+    , str = [ ]   /* the content to write out */
   ;
 
   if (message.response) {
@@ -213,14 +213,14 @@ exports.writeAsJSON = writeDataJson;
  */
 function writeDataXml(message, data, tagNameRoot, tagNameChild) {
   var fname = filename.replace(/\.[\w]+$/, '.xml')
-    , attr = [ ]  // attributes
-    , i           // array loop index
-    , item        // data item
-    , key         // item key index
-    , line        // line out
-    , schema = '' // xml-schema
-    , size        // size of content in bytes
-    , str = ''    // the content to write out
+    , attr = [ ]  /* attributes               */
+    , i           /* array loop index         */
+    , item        /* data item                */
+    , key         /* item key index           */
+    , line        /* line out                 */
+    , schema = '' /* xml-schema               */
+    , size        /* size of content in bytes */
+    , str = ''    /* the content to write out */
   ;
 
   tagNameRoot = tagNameRoot || 'root';
@@ -240,7 +240,7 @@ function writeDataXml(message, data, tagNameRoot, tagNameChild) {
               attr[key] = 'xs:boolean';
               break;
             case 'number':
-              // use == because we must only check the value
+              /* use == because we must only check the value */
               attr[key] = Math.floor(item[key]) == item[key] ? 
                               'xs:integer' : 
                               'xs:decimal';
@@ -259,7 +259,7 @@ function writeDataXml(message, data, tagNameRoot, tagNameChild) {
       }
       str += '</' + tagNameRoot + '>\n';
 
-      // create the schema
+      /* create the schema */
       schema += '<?xml version="1.0"?>\n';
       schema += '<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">\n';
       schema += '<xs:element name="' + tagNameRoot +'">\n';
@@ -442,7 +442,7 @@ exports.writeServerError = writeResponseError;
  */
 function writeResponseFile(message, data, type) {
   var str = ''
-    , size        // size of content in bytes
+    , size        /* size of content in bytes */
   ;
 
   type = (type || '').toLowerCase();
@@ -500,14 +500,14 @@ function writeResponseHead(response, type, length) {
       case 'gif':
         headers['Content-Type'] = 'image/gif';
         break;
-      case 'htm':  //fall through to html
+      case 'htm':  /* fall through to html */
       case 'html':
         headers['Content-Type'] = 'text/html';
         break;
       case 'ico':
         headers['Content-Type'] = 'image/x-icon';
         break;
-      case 'jpeg': //fall through to jpg
+      case 'jpeg': /* fall through to jpg */
       case 'jpg':
         headers['Content-Type'] = 'image/jpeg';
         break;
@@ -520,7 +520,7 @@ function writeResponseHead(response, type, length) {
       case 'mp4':
         headers['Content-Type'] = 'audio/mp4';
         break;
-      case 'mp3':  //fall through to mpeg
+      case 'mp3':  /* fall through to mpeg */
       case 'mpeg':
         headers['Content-Type'] = 'audio/mpeg';
         break;

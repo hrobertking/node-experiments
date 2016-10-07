@@ -24,7 +24,7 @@ if (cli_args.no_log) {
   server.logging = false;
 }
 
-// Usage information
+/* Usage information */
 function usage() {
   console.log('Syntax: ' + invoked.split(path.sep).pop() + ' <PARAMETERS>');
   console.log('');

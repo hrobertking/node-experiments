@@ -61,7 +61,7 @@ Object.defineProperty(exports, 'dir', {
     return root_dir;
   },
   set: function(value) {
-    // if the directory exists, use it
+    /* if the directory exists, use it */
     var fs = require('fs');
     if (typeof value === 'string') {
       try { 
@@ -153,7 +153,7 @@ function unhandled(message) {
   }
 
   try {
-    // check the path against the file system
+    /* check the path against the file system */
     if (fs.existsSync(filename) && fs.statSync(filename).isDirectory()) {
       filename += '/index.htm';
       filename += !fs.existsSync(filename) ? 'l' : '';
@@ -178,25 +178,25 @@ function route(message) {
     , handler
   ;
 
-  // sleep if it's requested
+  /* sleep if it's requested */
   if (message.request && message.request.cgi && message.request.cgi.latency) {
     sleep(message.request.cgi.latency);
   }
 
-  // check to see if the request is authorized
+  /* check to see if the request is authorized */
   if (message.request.forbidden) {
     emitter.emit('route-error', writer.writeNotAuthorized(message));
   } else {
-    // set the URI used by all the functions
+    /* set the URI used by all the functions */
     uri = url.parse(message.request.url);
 
-    // get the handler for the requested resource
+    /* get the handler for the requested resource */
     handler = routes[uri.pathname] || unhandled;
 
     if (typeof handler === 'function') {
       handler(message);
     } else {
-      // oops.
+      /* oops. */
       emitter.emit('route-error', writer.writeServerError(message, 
          'Unable to route request')
       );
