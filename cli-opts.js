@@ -117,6 +117,7 @@ function parse(args) {
         obj.argv.push(args[0]);
         args.splice(0, 1);
       } else if (!(/^\-{2}(\S+)/).test(args[1]) && !(/^\-{1}(\S+)/).test(args[1])) {
+        /**
          * there is data passed in, but it's not identfied
          * by anything other than proximity, so get the
          * current value for the arg and add this value to
