@@ -76,6 +76,34 @@ var curl = require('./curl'),
 - response: Fired when the response is received
 - timeout: Fired when a timeout event occurs. If timeout has not been set or is set to 0, a timeout never occurs.
 
+### log-analyzer
+This module is a work in progress. Currently it counts hits by remote address and by path and outputs
+the data to the console. I plan to expand this as time permits to create a statistical dashboard and
+to potentially analyze the data to reveal attacks with the possibility of adding an httpServer and
+socket.io to notify admins about attack patterns in real-time. Currently this is a stand-alone, but
+my long-term plan is to modify it to allow it to be integrated into the server module to enable
+the server to handle DoS attacks.
+
+Example:  
+node log-analyzer.js logs/server.log  
+
+#### Methods
+- *void* analyze: Analyzes the current dataset
+- *void* read: Reads the log and starts the analysis
+- *void* on(*string* eventname, *function* callback): Listens for the event and executes the callback when the event fires
+
+#### Properties
+- *object[]* data: The log entries as an array of objects
+- *string* file: The file to be analyzed
+
+#### Events
+- file-close-error: Error thrown when file close fails */
+- file-not-found: Error thrown when file is not found */
+- file-open-error: Error thrown when file open fails */
+- file-output-error: Error thrown when file write fails */
+- file-read-error: Error thrown when file read fails */
+- read-complete: Fired when the file read is complete */
+
 ### message
 The message object used with the *server* and *router* modules
 
