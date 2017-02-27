@@ -215,7 +215,7 @@ function Message(request, response) {
     /* remote logname is only available if mod_ident is present and IdentityCheck is on */
     self.log['cs-logname'] = '-';
 
-    self.log['c-ip'] = request.connection.remoteAddress;
+    self.log['c-ip'] = request.headers['x-forwarded-for'] || request.connection.remoteAddress;
     self.log['cs-bytes'] = Buffer.byteLength(request.data);
     self.log['cs-host'] = request.headers['host'];
     self.log['cs-method'] = request.method;
