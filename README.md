@@ -30,6 +30,7 @@ value in a shorthand argument, e.g., -hv:off, is applied only to the **last** ar
 and *args.v* = "off".
 
 Example:  
+```javascript
 var cli = require('./cli-opts'),  
  opts = cli.parse(process.argv.slice(2));  
 if (opts.h || opts.help) {  
@@ -41,6 +42,7 @@ var cli = require('./cli-opts'),
 if (opts.h || opts.help) {  
   //show help  
 }  
+```
 
 ##### Methods
 - *object* parse: Returns an object with named parameters and a copy of all parameters in argv.
@@ -57,8 +59,10 @@ minor differences because of the difference in use-cases.
 *object* curl.request([*object|string* options[, *function* callback]);
 
 Example:  
+```javascript
 var curl = require('./curl'),  
  req = curl.request({ 'host':'js.cathmhaol.com', 'protocol':'http' }, responseHandler);
+```
 
 ##### Methods
 - *void* abort: Aborts the request
@@ -108,8 +112,10 @@ node log-analyzer.js logs/server.log
 The message object used with the *server* and *router* modules
 
 Example:  
+```javascript
 var message = require('./message')
  msg = message.create(request, response);  
+```
 
 ##### Methods
 - *object* create: Creates a message object using the provided request and response objects
@@ -125,8 +131,10 @@ var message = require('./message')
 The routing module used with the *server* and *writer* modules
 
 Example:  
+```javascript
 var router = require('./router');
 router.route(request, response);
+```
 
 ##### Methods
 - *void* on(*string* eventname, *function* handler): Subscribes to the 'error' or 'response-sent' event
@@ -143,10 +151,12 @@ router.route(request, response);
 A module to calculate a scale for a value given a domain (minimum and maximum possible data values) and a range (minimum and maximum mapped values).
 
 Example:  
+```javascript
 var scale = require('./scale');  
 scale.domain = [1, 10];  
 scale.range = [1, 100];  
 var mapped = scale.scale(5);  // returns 50
+```
 
 ##### Methods
 
@@ -158,9 +168,11 @@ var mapped = scale.scale(5);  // returns 50
 The primary module that generates a web server. It requires the *router* module and the *writer* module in this repo.
 
 Example:  
+```javascript
 var server = require('./server');  
 server.port = 8080;  
 server.start();
+```
 
 ##### Methods
 - *void* on(*string* eventname, *function* handler): Subscribes to the 'request-received' or 'response-sent' event
@@ -180,11 +192,24 @@ A handy little module that will run synchronously.
 *string* sync.cmd(*string* command);
 
 Example:  
+```javascript
 var sync = require('./sync');
 files = sync.cmd('ls -l').split(/\n/);
+```
 
 ##### Methods
 - *string* cmd(*string* command): Executes a command an waits for the process to complete before returning a string containing the results
+
+##### Properties
+
+##### Events
+
+### utilities
+A collection of basic utilities that can be included or run from the command line.
+
+##### Methods
+- *object* getOpts(): Returns an object that contains the command-line arguments. For example, using getOpts on the command `node myscript.js -q -f=myfile.js` will return an object `{ q:true, f:'myfile.js' }` with the additional properties `_command` that contains the command being executed and `argv`, which is an array containing the parameters passed.
+- *string* utfToHtml(utf): Translates a UTF string to HTML entities, e.g. space becomes '&#32;' and a tab character becomes &#9;. If run from the command-line, the translated string is output in the console. If the utility is run as an exported nodejs function, the translated string is returned by the call. Example: `node utilities.js --utfToHtml="非常抱歉"` will output `非常抱歉 --> &#38750;&#24120;&#25265;&#27465;`
 
 ##### Properties
 
@@ -194,8 +219,10 @@ files = sync.cmd('ls -l').split(/\n/);
 A collection of methods used to write to the response stream on the web server.
 
 Example:  
+```javascript
 var writer = require('./writer');  
 writer.writeAsJSON(res, [ {'name':'foo', 'value':'1'}, {'name':'bar', 'value':'2'} ]);
+```
 
 ##### Methods
 - *server.Message* writeAsCSV(*server.Message* message, *object[]* data): Writes the data collection out as comma-separated values with a data element name header row.
