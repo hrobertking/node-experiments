@@ -18,18 +18,26 @@ var path = require('path'),
             description: 'Translates a UTF string to HTML entities',
             opt_short: 'u',
             opt_long: 'utfToHtml',
-            run: function utfToHtml() {
+            run: function utfToHtml(str) {
                 var bite,
                     tr = '',
-                    utf = this.value;
+                    utf = this.value || str;
 
                 /* translate all the chars */
                 for (bite = 0; bite < utf.length; bite += 1) {
                     tr += '&#' + utf.charCodeAt(bite) + ';'
                 }
+                
+                /* translate the spaces back to spaces */
+                tr = tr.replace(/&#(32|9);/g, ' ');
 
-                /* display the translated string */
-                console.log(utf + ' --> ' + tr.replace('&#32;', ' '));
+                /* display the translated string if we're using the utility */
+                if (!str) {
+                    console.log(utf + ' --> ' + tr);
+                }
+                
+                /* return the value */
+                return tr;
             },
             value: ''
         }
