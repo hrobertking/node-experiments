@@ -4,7 +4,8 @@
  * @author: hrobertking@cathmhoal.com
  *
  * @exports getCLIOpts as getOpts
- * @exports utfDecode as utfToHtml 
+ * @exports utfDecode as utfToHtml
+ * @exports utfEncode as htmlToUtf
  */
 
 var path = require('path'),
@@ -12,6 +13,29 @@ var path = require('path'),
     cli = getCLIOpts(),
     translated,
     utilities = {
+        'htmlToUtf': {
+            description: 'Encodes HTML entitities as a UTF string. VALUE MUST BE ENCLOSED IN DOUBLE QUOTES.',
+            opt_short: 'e',
+            opt_long: 'encode',
+            run: function utfEncode(str) {
+                var bite,
+                    html = this.value || str;
+
+                /* translate all the entities */
+                translated = html.replace(/&#(\d+);/g, function(match, val) {
+                    return String.fromCharCode(val);
+                });
+
+                /* display the translated string if we're using the utility */
+                if (!str && !cli.q && !cli.quiet) {
+                    console.log(html + ' --> ' + translated);
+                }
+                
+                /* return the value */
+                return translated;
+            },
+            value: ''
+        },
         'utfToHtml': {
             description: 'Decodes a UTF string into HTML entities',
             opt_short: 'd',
@@ -218,6 +242,7 @@ function usage() {
 /* exported properties */
 exports.getOpts = getCLIOpts;
 exports.utfToHtml = utfDecode;
+exports.htmlToUtf = utfEncode;
 
 /* check to make sure that we have at least one arg that isn't 'help' */
 if (cli.h || cli.help || !cli.argv || !cli.argv.length || !cli.argv[0]) {
