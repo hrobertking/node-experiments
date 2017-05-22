@@ -19,7 +19,7 @@ var path = require('path'),
             opt_long: 'grep',
             run: function grep() {
                 var exec = require('child_process').exec
-                    cmd = 'grep "' + translated + '" ' + this.value + ' -r';
+                    cmd = 'grep --color=always "' + translated + '" ' + this.value + ' -r';
 
                 if (translated) {
                     exec(cmd, function notify(error, stdout, stderr) {
@@ -263,8 +263,8 @@ function usage() {
 
 /* exported properties */
 exports.getOpts = getCLIOpts;
-exports.utfToHtml = utfDecode;
-exports.htmlToUtf = utfEncode;
+exports.utfToHtml = utilities.utfToHtml.run;
+exports.htmlToUtf = utilities.htmlToUtf.run;
 
 /**
  * Runs the utilities as passed on the command line while delaying execution of specific utilities
