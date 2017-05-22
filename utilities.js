@@ -4,40 +4,38 @@
  * @author: hrobertking@cathmhoal.com
  *
  * @exports getCLIOpts as getOpts
- * @exports utfToHtml as utfToHtml 
+ * @exports utfDecode as utfToHtml 
  */
 
 var path = require('path'),
     invoked = process.argv[1].split(path.sep).pop(),
     cli = getCLIOpts(),
-    param,
-    utility,
-    count = 0,
+    translated,
     utilities = {
         'utfToHtml': {
-            description: 'Translates a UTF string to HTML entities',
-            opt_short: 'u',
-            opt_long: 'utfToHtml',
-            run: function utfToHtml(str) {
+            description: 'Decodes a UTF string into HTML entities',
+            opt_short: 'd',
+            opt_long: 'decode',
+            run: function utfDecode(str) {
                 var bite,
-                    tr = '',
                     utf = this.value || str;
 
                 /* translate all the chars */
+                translated = '';
                 for (bite = 0; bite < utf.length; bite += 1) {
-                    tr += '&#' + utf.charCodeAt(bite) + ';'
+                    translated += '&#' + utf.charCodeAt(bite) + ';'
                 }
                 
                 /* translate the spaces back to spaces */
-                tr = tr.replace(/&#(32|9);/g, ' ');
+                translated = translated.replace(/&#(32|9);/g, ' ');
 
                 /* display the translated string if we're using the utility */
-                if (!str) {
-                    console.log(utf + ' --> ' + tr);
+                if (!str && !cli.q && !cli.quiet) {
+                    console.log(utf + ' --> ' + translated);
                 }
                 
                 /* return the value */
-                return tr;
+                return translated;
             },
             value: ''
         }
@@ -185,7 +183,7 @@ function usage() {
 
     /* add non-utility parameters */
     params.push(['-h, --help', 'Show usage information']);
-    params.push(['-q, --quiet', 'Suppress lint results']);
+    params.push(['-q, --quiet', 'Suppress results']);
 
     /* calculate the longest parameter definition */
     for (item in utilities) {
@@ -219,7 +217,7 @@ function usage() {
 
 /* exported properties */
 exports.getOpts = getCLIOpts;
-exports.utfToHtml = utfToHtml;
+exports.utfToHtml = utfDecode;
 
 /* check to make sure that we have at least one arg that isn't 'help' */
 if (cli.h || cli.help || !cli.argv || !cli.argv.length || !cli.argv[0]) {
