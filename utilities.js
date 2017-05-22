@@ -13,6 +13,28 @@ var path = require('path'),
     cli = getCLIOpts(),
     translated,
     utilities = {
+        'grep': {
+            description: 'Searches for a translated string in the specified directory, recusively.',
+            opt_short: 'g',
+            opt_long: 'grep',
+            run: function grep() {
+                var exec = require('child_process').exec
+                    cmd = 'grep "' + translated + '" ' + this.value + ' -r';
+
+                if (translated) {
+                    exec(cmd, function notify(error, stdout, stderr) {
+                            if (error) {
+                                console.error(error);
+                            } else if (stdout) {
+                                console.log(stdout);
+                            } else if (stderr) {
+                                console.error(stderr);
+                            }
+                        });
+                }
+            },
+            value: ''
+        },
         'htmlToUtf': {
             description: 'Encodes HTML entitities as a UTF string. VALUE MUST BE ENCLOSED IN DOUBLE QUOTES.',
             opt_short: 'e',
@@ -244,30 +266,59 @@ exports.getOpts = getCLIOpts;
 exports.utfToHtml = utfDecode;
 exports.htmlToUtf = utfEncode;
 
-/* check to make sure that we have at least one arg that isn't 'help' */
-if (cli.h || cli.help || !cli.argv || !cli.argv.length || !cli.argv[0]) {
-    usage();
-} else {
-    /* loop through the command-line parameters */
-    for (param in cli) {
-        if (cli.hasOwnProperty(param)) {
-            /* loop through the utilities looking for a match */
-            for (utility in utilities) {
-                if (utilities.hasOwnProperty(utility) &&
-                     (utilities[utility].opt_long === param ||
-                        utilities[utility].opt_short === param ||
-                        utility === param)) {
-                    utilities[utility].value = cli[param];
-                    utilities[utility].run();
-                    count += 1;
-                    break;
-                }
+/**
+ * Runs the utilities as passed on the command line while delaying execution of specific utilities
+ * @returns {void}
+ */
+function runUtilities() {
+    var param,
+        deList = ['g', 'grep'];
+
+    /**
+     * Runs the utility indicated by the cli parameter
+     * @return {void}
+     * @param {string} clp
+     */
+    function runUtility(clp) {
+        var utility;
+
+        /* loop through the utilities looking for a match */
+        for (utility in utilities) {
+            if (utilities.hasOwnProperty(utility) &&
+                 (utilities[utility].opt_long === clp ||
+                    utilities[utility].opt_short === clp ||
+                    utility === clp)) {
+                utilities[utility].value = cli[clp];
+                utilities[utility].run();
+                break;
             }
         }
     }
-    
-    /* if we didn't find a utility to run, show the usage info so the user knows what's available */
-    if (!count) {
-        usage();
+
+    /* loop through the command-line parameters */
+    for (param in cli) {
+        /* run the utility if it's not specified in the delayed execution list */
+        if (deList.indexOf(param) < 0) {
+            if (cli.hasOwnProperty(param)) {
+                runUtility(param);
+            }
+        }
     }
+
+    /* run the utility if it's specified in the delayed execution list */
+    for (param = 0; param < deList.length; param += 1) {
+        if (cli.hasOwnProperty(deList[param])) {
+            runUtility(deList[param]);
+        }
+    }
+}
+
+/**
+ * if no utilities are specified or if help is specified, show usage,
+ * otherwise, loop through the specified utilities
+ */
+if (cli.h || cli.help || !cli.argv || !cli.argv.length || !cli.argv[0]) {
+    usage();
+} else {
+    runUtilities();
 }
